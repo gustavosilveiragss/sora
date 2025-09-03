@@ -315,6 +315,11 @@ site/
 *.doc
 !CLAUDE.md
 
+# Implementation planning files
+*_IMPLEMENTATION_PLAN.md
+BACKEND_IMPLEMENTATION_PLAN.md
+ANDROID_IMPLEMENTATION_PLAN.md
+
 # =====================================
 # OPERATING SYSTEM
 # =====================================

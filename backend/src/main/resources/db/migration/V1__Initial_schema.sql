@@ -46,18 +46,11 @@ CREATE TABLE trip (
     description TEXT,
     creator_id BIGINT NOT NULL,
     country_id BIGINT NOT NULL,
-    parent_trip_id BIGINT,
-    trip_type VARCHAR(20) NOT NULL DEFAULT 'COLLABORATIVE',
-    start_date DATE,
-    end_date DATE,
-    status VARCHAR(20) NOT NULL DEFAULT 'PLANNING',
+    is_collaborative BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (creator_id) REFERENCES user_account(id),
-    FOREIGN KEY (country_id) REFERENCES country(id),
-    FOREIGN KEY (parent_trip_id) REFERENCES trip(id) ON DELETE CASCADE,
-    CHECK (status IN ('PLANNING', 'ACTIVE', 'COMPLETED')),
-    CHECK (trip_type IN ('COLLABORATIVE', 'INDIVIDUAL'))
+    FOREIGN KEY (country_id) REFERENCES country(id)
 );
 
 CREATE TABLE trip_invitation (
@@ -169,9 +162,8 @@ CREATE INDEX idx_user_account_email ON user_account(email);
 CREATE INDEX idx_city_country ON city(country_id);
 CREATE INDEX idx_trip_creator ON trip(creator_id);
 CREATE INDEX idx_trip_country ON trip(country_id);
-CREATE INDEX idx_trip_status ON trip(status);
-CREATE INDEX idx_trip_parent ON trip(parent_trip_id);
-CREATE INDEX idx_trip_type ON trip(trip_type);
+CREATE INDEX idx_trip_collaborative ON trip(is_collaborative);
+CREATE UNIQUE INDEX idx_trip_creator_country_unique ON trip(creator_id, country_id) WHERE is_collaborative = FALSE;
 CREATE INDEX idx_trip_invitation_trip ON trip_invitation(trip_id);
 CREATE INDEX idx_trip_invitation_invitee ON trip_invitation(invitee_id);
 CREATE INDEX idx_trip_invitation_status ON trip_invitation(status);
