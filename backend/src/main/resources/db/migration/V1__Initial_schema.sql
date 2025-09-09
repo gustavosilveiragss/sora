@@ -1,3 +1,15 @@
+DROP TABLE IF EXISTS notification CASCADE;
+DROP TABLE IF EXISTS comment CASCADE;
+DROP TABLE IF EXISTS like_post CASCADE;
+DROP TABLE IF EXISTS follow CASCADE;
+DROP TABLE IF EXISTS post_media CASCADE;
+DROP TABLE IF EXISTS post CASCADE;
+DROP TABLE IF EXISTS travel_permission CASCADE;
+DROP TABLE IF EXISTS country_visited CASCADE;
+DROP TABLE IF EXISTS collection CASCADE;
+DROP TABLE IF EXISTS country CASCADE;
+DROP TABLE IF EXISTS user_account CASCADE;
+
 CREATE TABLE user_account (
     id BIGSERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -7,28 +19,21 @@ CREATE TABLE user_account (
     last_name VARCHAR(100) NOT NULL,
     bio TEXT,
     profile_picture VARCHAR(500),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    role VARCHAR(20) NOT NULL DEFAULT 'USER',
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 CREATE TABLE country (
     id BIGSERIAL PRIMARY KEY,
     code VARCHAR(5) NOT NULL UNIQUE,
     name_key VARCHAR(100) NOT NULL,
-    latitude DECIMAL(10, 8),
-    longitude DECIMAL(11, 8),
-    timezone VARCHAR(50)
-);
-
-CREATE TABLE city (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    name_key VARCHAR(100) NOT NULL,
-    latitude DECIMAL(10, 8) NOT NULL,
-    longitude DECIMAL(11, 8) NOT NULL,
-    country_id BIGINT NOT NULL,
-    FOREIGN KEY (country_id) REFERENCES country(id)
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    timezone VARCHAR(50),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
 CREATE TABLE collection (
@@ -36,63 +41,48 @@ CREATE TABLE collection (
     code VARCHAR(50) NOT NULL UNIQUE,
     name_key VARCHAR(100) NOT NULL,
     icon_name VARCHAR(100),
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    is_default BOOLEAN NOT NULL DEFAULT FALSE
+    sort_order INTEGER NOT NULL,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
 
-CREATE TABLE trip (
+CREATE TABLE travel_permission (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    creator_id BIGINT NOT NULL,
+    grantor_id BIGINT NOT NULL,
+    grantee_id BIGINT NOT NULL,
     country_id BIGINT NOT NULL,
-    is_collaborative BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (creator_id) REFERENCES user_account(id),
-    FOREIGN KEY (country_id) REFERENCES country(id)
-);
-
-CREATE TABLE trip_invitation (
-    id BIGSERIAL PRIMARY KEY,
-    trip_id BIGINT NOT NULL,
-    inviter_id BIGINT NOT NULL,
-    invitee_id BIGINT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    message TEXT,
-    invited_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    invitation_message TEXT,
     responded_at TIMESTAMP,
-    FOREIGN KEY (trip_id) REFERENCES trip(id) ON DELETE CASCADE,
-    FOREIGN KEY (inviter_id) REFERENCES user_account(id),
-    FOREIGN KEY (invitee_id) REFERENCES user_account(id),
-    CHECK (status IN ('PENDING', 'ACCEPTED', 'DECLINED'))
-);
-
-CREATE TABLE trip_participant (
-    id BIGSERIAL PRIMARY KEY,
-    trip_id BIGINT NOT NULL,
-    user_id BIGINT NOT NULL,
-    role VARCHAR(20) NOT NULL DEFAULT 'PARTICIPANT',
-    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (trip_id) REFERENCES trip(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES user_account(id),
-    UNIQUE(trip_id, user_id),
-    CHECK (role IN ('CREATOR', 'PARTICIPANT'))
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    FOREIGN KEY (grantor_id) REFERENCES user_account(id),
+    FOREIGN KEY (grantee_id) REFERENCES user_account(id),
+    FOREIGN KEY (country_id) REFERENCES country(id),
+    CONSTRAINT uk_travel_permission_grantor_grantee_country UNIQUE(grantor_id, grantee_id, country_id),
+    CHECK (status IN ('PENDING', 'ACTIVE', 'DECLINED', 'REVOKED'))
 );
 
 CREATE TABLE post (
     id BIGSERIAL PRIMARY KEY,
     author_id BIGINT NOT NULL,
-    trip_id BIGINT NOT NULL,
+    profile_owner_id BIGINT NOT NULL,
+    country_id BIGINT NOT NULL,
     collection_id BIGINT NOT NULL,
-    city_id BIGINT NOT NULL,
+    city_name VARCHAR(255) NOT NULL,
+    city_latitude DOUBLE PRECISION,
+    city_longitude DOUBLE PRECISION,
     caption TEXT,
-    posted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    visibility_type VARCHAR(20) NOT NULL DEFAULT 'PERSONAL',
+    shared_post_group_id VARCHAR(36),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     FOREIGN KEY (author_id) REFERENCES user_account(id),
-    FOREIGN KEY (trip_id) REFERENCES trip(id),
+    FOREIGN KEY (profile_owner_id) REFERENCES user_account(id),
+    FOREIGN KEY (country_id) REFERENCES country(id),
     FOREIGN KEY (collection_id) REFERENCES collection(id),
-    FOREIGN KEY (city_id) REFERENCES city(id)
+    CONSTRAINT post_visibility_type_check CHECK (visibility_type IN ('PERSONAL', 'SHARED', 'COLLABORATIVE'))
 );
 
 CREATE TABLE post_media (
@@ -106,7 +96,8 @@ CREATE TABLE post_media (
     width INTEGER,
     height INTEGER,
     sort_order INTEGER NOT NULL DEFAULT 0,
-    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     FOREIGN KEY (post_id) REFERENCES post(id) ON DELETE CASCADE,
     CHECK (media_type IN ('IMAGE', 'VIDEO'))
 );
@@ -115,10 +106,11 @@ CREATE TABLE follow (
     id BIGSERIAL PRIMARY KEY,
     follower_id BIGINT NOT NULL,
     following_id BIGINT NOT NULL,
-    followed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     FOREIGN KEY (follower_id) REFERENCES user_account(id),
     FOREIGN KEY (following_id) REFERENCES user_account(id),
-    UNIQUE(follower_id, following_id),
+    CONSTRAINT uk_follow_follower_following UNIQUE(follower_id, following_id),
     CHECK (follower_id != following_id)
 );
 
@@ -126,10 +118,11 @@ CREATE TABLE like_post (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     post_id BIGINT NOT NULL,
-    liked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user_account(id),
     FOREIGN KEY (post_id) REFERENCES post(id) ON DELETE CASCADE,
-    UNIQUE(user_id, post_id)
+    CONSTRAINT uk_like_post_user_post UNIQUE(user_id, post_id)
 );
 
 CREATE TABLE comment (
@@ -138,8 +131,8 @@ CREATE TABLE comment (
     post_id BIGINT NOT NULL,
     parent_comment_id BIGINT,
     content TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     FOREIGN KEY (author_id) REFERENCES user_account(id),
     FOREIGN KEY (post_id) REFERENCES post(id) ON DELETE CASCADE,
     FOREIGN KEY (parent_comment_id) REFERENCES comment(id) ON DELETE CASCADE
@@ -149,36 +142,46 @@ CREATE TABLE notification (
     id BIGSERIAL PRIMARY KEY,
     recipient_id BIGINT NOT NULL,
     type VARCHAR(50) NOT NULL,
-    message TEXT NOT NULL,
+    message TEXT,
     reference_id VARCHAR(100),
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     FOREIGN KEY (recipient_id) REFERENCES user_account(id),
-    CHECK (type IN ('NEW_FOLLOWER', 'TRIP_INVITATION', 'TRIP_INVITATION_ACCEPTED', 'TRIP_INVITATION_DECLINED', 'POST_LIKED', 'POST_COMMENTED', 'COMMENT_REPLIED'))
+    CHECK (type IN ('NEW_FOLLOWER', 'TRAVEL_PERMISSION_INVITATION', 'TRAVEL_PERMISSION_ACCEPTED', 'TRAVEL_PERMISSION_DECLINED', 'POST_LIKED', 'POST_COMMENTED', 'COMMENT_REPLIED'))
 );
 
 CREATE INDEX idx_user_account_username ON user_account(username);
 CREATE INDEX idx_user_account_email ON user_account(email);
-CREATE INDEX idx_city_country ON city(country_id);
-CREATE INDEX idx_trip_creator ON trip(creator_id);
-CREATE INDEX idx_trip_country ON trip(country_id);
-CREATE INDEX idx_trip_collaborative ON trip(is_collaborative);
-CREATE UNIQUE INDEX idx_trip_creator_country_unique ON trip(creator_id, country_id) WHERE is_collaborative = FALSE;
-CREATE INDEX idx_trip_invitation_trip ON trip_invitation(trip_id);
-CREATE INDEX idx_trip_invitation_invitee ON trip_invitation(invitee_id);
-CREATE INDEX idx_trip_invitation_status ON trip_invitation(status);
-CREATE INDEX idx_trip_participant_trip ON trip_participant(trip_id);
-CREATE INDEX idx_trip_participant_user ON trip_participant(user_id);
+
+CREATE INDEX idx_country_visited_user ON country_visited(user_id);
+CREATE INDEX idx_country_visited_country ON country_visited(country_id);
+CREATE INDEX idx_country_visited_last_visit ON country_visited(last_visit_date DESC);
+
+CREATE INDEX idx_travel_permission_grantor ON travel_permission(grantor_id);
+CREATE INDEX idx_travel_permission_grantee ON travel_permission(grantee_id);
+CREATE INDEX idx_travel_permission_country ON travel_permission(country_id);
+CREATE INDEX idx_travel_permission_status ON travel_permission(status);
+
 CREATE INDEX idx_post_author ON post(author_id);
-CREATE INDEX idx_post_trip ON post(trip_id);
-CREATE INDEX idx_post_city ON post(city_id);
-CREATE INDEX idx_post_posted_at ON post(posted_at DESC);
+CREATE INDEX idx_post_profile_owner ON post(profile_owner_id);
+CREATE INDEX idx_post_country ON post(country_id);
+CREATE INDEX idx_post_created_at ON post(created_at DESC);
+CREATE INDEX idx_post_visibility_type ON post(visibility_type);
+CREATE INDEX idx_post_shared_group ON post(shared_post_group_id);
+CREATE INDEX idx_post_author_profile ON post(author_id, profile_owner_id);
+CREATE INDEX idx_post_city_location ON post(city_latitude, city_longitude);
+
 CREATE INDEX idx_post_media_post ON post_media(post_id);
+
 CREATE INDEX idx_follow_follower ON follow(follower_id);
 CREATE INDEX idx_follow_following ON follow(following_id);
+
 CREATE INDEX idx_like_post_post ON like_post(post_id);
 CREATE INDEX idx_like_post_user ON like_post(user_id);
+
 CREATE INDEX idx_comment_post ON comment(post_id);
 CREATE INDEX idx_comment_parent ON comment(parent_comment_id);
+
 CREATE INDEX idx_notification_recipient ON notification(recipient_id);
 CREATE INDEX idx_notification_read ON notification(is_read);
