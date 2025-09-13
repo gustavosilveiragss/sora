@@ -2,7 +2,6 @@ package com.sora.backend.model;
 
 public enum NotificationType {
     NEW_FOLLOWER,
-    USER_FOLLOWED,
     TRAVEL_PERMISSION_INVITATION,
     TRAVEL_PERMISSION_ACCEPTED,
     TRAVEL_PERMISSION_DECLINED,

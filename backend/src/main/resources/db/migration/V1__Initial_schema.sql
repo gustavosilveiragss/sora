@@ -154,10 +154,6 @@ CREATE TABLE notification (
 CREATE INDEX idx_user_account_username ON user_account(username);
 CREATE INDEX idx_user_account_email ON user_account(email);
 
-CREATE INDEX idx_country_visited_user ON country_visited(user_id);
-CREATE INDEX idx_country_visited_country ON country_visited(country_id);
-CREATE INDEX idx_country_visited_last_visit ON country_visited(last_visit_date DESC);
-
 CREATE INDEX idx_travel_permission_grantor ON travel_permission(grantor_id);
 CREATE INDEX idx_travel_permission_grantee ON travel_permission(grantee_id);
 CREATE INDEX idx_travel_permission_country ON travel_permission(country_id);

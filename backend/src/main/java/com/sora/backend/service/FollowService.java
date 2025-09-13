@@ -31,9 +31,14 @@ public class FollowService {
 
 
     public Follow followUser(UserAccount follower, Long followingUserId) {
-        UserAccount following = userAccountRepository.findById(followingUserId).orElseThrow(() -> new ServiceException(MessageUtil.getMessage("user.not.found")));
-        if (follower.getId().equals(following.getId())) throw new ServiceException(MessageUtil.getMessage("follow.cannot.follow.self"));
-        if (followRepository.existsByFollowerIdAndFollowingId(follower.getId(), following.getId())) throw new ServiceException(MessageUtil.getMessage("follow.already.following"));
+        UserAccount following = userAccountRepository.findById(followingUserId)
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("user.not.found")));
+
+        if (follower.getId().equals(following.getId()))
+            throw new ServiceException(MessageUtil.getMessage("follow.cannot.follow.self"));
+
+        if (followRepository.existsByFollowerIdAndFollowingId(follower.getId(), following.getId()))
+            throw new ServiceException(MessageUtil.getMessage("follow.already.following"));
 
         Follow follow = new Follow();
         follow.setFollower(follower);
@@ -47,9 +52,13 @@ public class FollowService {
     }
 
     public void unfollowUser(UserAccount follower, Long followingUserId) {
-        UserAccount following = userAccountRepository.findById(followingUserId).orElseThrow(() -> new ServiceException(MessageUtil.getMessage("user.not.found")));
+        UserAccount following = userAccountRepository.findById(followingUserId)
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("user.not.found")));
         Optional<Follow> followOpt = followRepository.findByFollowerIdAndFollowingId(follower.getId(), following.getId());
-        if (!followOpt.isPresent()) throw new ServiceException(MessageUtil.getMessage("follow.not.following"));
+
+        if (followOpt.isEmpty())
+            throw new ServiceException(MessageUtil.getMessage("follow.not.following"));
+
         followRepository.deleteByFollowerIdAndFollowingId(follower.getId(), following.getId());
     }
 
@@ -86,8 +95,7 @@ public class FollowService {
     @Transactional(readOnly = true)
     public Page<Follow> getUserFollowers(Long userId, Pageable pageable) {
         UserAccount user = userAccountRepository.findById(userId)
-            .orElseThrow(() -> new ServiceException(
-                MessageUtil.getMessage("user.not.found")));
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("user.not.found")));
         
         return getFollowers(user, pageable);
     }
@@ -95,8 +103,7 @@ public class FollowService {
     @Transactional(readOnly = true)
     public Page<Follow> getUserFollowing(Long userId, Pageable pageable) {
         UserAccount user = userAccountRepository.findById(userId)
-            .orElseThrow(() -> new ServiceException(
-                MessageUtil.getMessage("user.not.found")));
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("user.not.found")));
         
         return getFollowing(user, pageable);
     }
@@ -104,9 +111,8 @@ public class FollowService {
     @Transactional(readOnly = true)
     public boolean isUserFollowing(UserAccount currentUser, Long targetUserId) {
         UserAccount targetUser = userAccountRepository.findById(targetUserId)
-            .orElseThrow(() -> new ServiceException(
-                MessageUtil.getMessage("user.not.found")));
-        
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("user.not.found")));
+
         return isFollowing(currentUser, targetUser);
     }
 }

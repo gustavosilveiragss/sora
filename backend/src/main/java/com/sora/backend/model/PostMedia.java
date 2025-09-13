@@ -117,4 +117,9 @@ public class PostMedia extends BaseEntity {
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
     }
+
+    // For compatibility with DTO mapping
+    public java.time.LocalDateTime getUploadedAt() {
+        return getCreatedAt();
+    }
 }

@@ -2,6 +2,7 @@ package com.sora.backend.controller;
 
 import com.sora.backend.dto.*;
 import com.sora.backend.exception.ServiceException;
+import com.sora.backend.exception.BusinessLogicException;
 import com.sora.backend.model.UserAccount;
 import com.sora.backend.security.JwtUtil;
 import com.sora.backend.service.UserAccountService;
@@ -65,7 +66,7 @@ public class AuthController {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
             Optional<UserAccount> userOpt = userAccountService.findByEmail(request.email());
-            if (userOpt.isEmpty()) throw new ServiceException(MessageUtil.getMessage("auth.invalid.credentials"));
+            if (userOpt.isEmpty()) throw new BadCredentialsException(MessageUtil.getMessage("auth.invalid.credentials"));
             UserAccount user = userOpt.get();
             UserDetails userDetails = userAccountService.loadUserByUsername(user.getEmail());
             String accessToken = jwtUtil.generateAccessToken(userDetails);
@@ -75,7 +76,7 @@ public class AuthController {
             AuthResponseDto response = new AuthResponseDto("auth.login.success", userProfile, tokens);
             return ResponseEntity.ok(response);
         } catch (BadCredentialsException e) {
-            throw new ServiceException(MessageUtil.getMessage("auth.invalid.credentials"));
+            throw e; // Let GlobalExceptionHandler handle this properly
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
@@ -90,14 +91,16 @@ public class AuthController {
     public ResponseEntity<TokenRefreshResponseDto> refreshToken(@Valid @RequestBody RefreshTokenRequestDto request) {
         try {
             String refreshToken = request.refreshToken();
-            if (!jwtUtil.validateToken(refreshToken)) throw new ServiceException(MessageUtil.getMessage("auth.token.invalid"));
+            if (!jwtUtil.validateToken(refreshToken)) throw new BusinessLogicException("auth.token.invalid", MessageUtil.getMessage("auth.token.invalid"), HttpStatus.UNAUTHORIZED);
             String tokenType = jwtUtil.getTokenType(refreshToken);
-            if (!"refresh".equals(tokenType)) throw new ServiceException(MessageUtil.getMessage("auth.token.invalid.type"));
+            if (!"refresh".equals(tokenType)) throw new BusinessLogicException("auth.token.invalid.type", MessageUtil.getMessage("auth.token.invalid.type"), HttpStatus.UNAUTHORIZED);
             String username = jwtUtil.extractUsername(refreshToken);
             UserDetails userDetails = userAccountService.loadUserByUsername(username);
             String newAccessToken = jwtUtil.generateAccessToken(userDetails);
             TokenRefreshResponseDto response = new TokenRefreshResponseDto(newAccessToken, jwtUtil.getAccessTokenExpiration());
             return ResponseEntity.ok(response);
+        } catch (BusinessLogicException e) {
+            throw e;
         } catch (ServiceException e) {
             throw e;
         } catch (Exception e) {
@@ -108,8 +111,9 @@ public class AuthController {
     @PostMapping("/logout")
     @Operation(summary = "User logout", description = "Logout user (client should discard tokens)")
     @ApiResponse(responseCode = "200", description = "Logout successful")
-    public ResponseEntity<Void> logout() {
-        return ResponseEntity.ok().build();
+    public ResponseEntity<MessageResponseDto> logout() {
+        MessageResponseDto response = new MessageResponseDto(MessageUtil.getMessage("auth.logout.success"));
+        return ResponseEntity.ok(response);
     }
 
     private UserProfileDto createUserProfileDto(UserAccount user) {

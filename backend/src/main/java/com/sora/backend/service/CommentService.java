@@ -32,8 +32,7 @@ public class CommentService {
 
     public Comment createComment(UserAccount author, Long postId, String content) {
         Post post = postRepository.findById(postId)
-            .orElseThrow(() -> new ServiceException(
-                MessageUtil.getMessage("post.not.found")));
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("post.not.found")));
 
         Comment comment = new Comment();
         comment.setAuthor(author);
@@ -52,12 +51,10 @@ public class CommentService {
 
     public Comment createReply(UserAccount author, Long parentCommentId, String content) {
         Comment parentComment = commentRepository.findById(parentCommentId)
-            .orElseThrow(() -> new ServiceException(
-                MessageUtil.getMessage("comment.not.found")));
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("comment.not.found")));
 
         if (parentComment.getParentComment() != null) {
-            throw new ServiceException(
-                MessageUtil.getMessage("comment.cannot.reply.to.reply"));
+            throw new ServiceException(MessageUtil.getMessage("comment.cannot.reply.to.reply"));
         }
 
         Comment reply = new Comment();
@@ -70,15 +67,13 @@ public class CommentService {
         Comment savedReply = commentRepository.save(reply);
 
         if (!parentComment.getAuthor().getId().equals(author.getId())) {
-            notificationService.createPostCommentedNotification(
-                parentComment.getAuthor(), author, parentComment.getPost());
+            notificationService.createPostCommentedNotification(parentComment.getAuthor(), author, parentComment.getPost());
         }
 
-        if (parentComment.getPost().getAuthor() != null && 
-            !parentComment.getPost().getAuthor().getId().equals(author.getId()) &&
-            !parentComment.getPost().getAuthor().getId().equals(parentComment.getAuthor().getId())) {
-            notificationService.createPostCommentedNotification(
-                parentComment.getPost().getAuthor(), author, parentComment.getPost());
+        if (parentComment.getPost().getAuthor() != null
+                && !parentComment.getPost().getAuthor().getId().equals(author.getId())
+                && !parentComment.getPost().getAuthor().getId().equals(parentComment.getAuthor().getId())) {
+            notificationService.createPostCommentedNotification(parentComment.getPost().getAuthor(), author, parentComment.getPost());
         }
 
         return savedReply;
@@ -106,12 +101,10 @@ public class CommentService {
 
     public Comment updateComment(Long commentId, UserAccount currentUser, String content) {
         Comment comment = commentRepository.findById(commentId)
-            .orElseThrow(() -> new ServiceException(
-                MessageUtil.getMessage("comment.not.found")));
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("comment.not.found")));
 
         if (!comment.getAuthor().getId().equals(currentUser.getId())) {
-            throw new ServiceException(
-                MessageUtil.getMessage("comment.not.authorized"));
+            throw new ServiceException(MessageUtil.getMessage("comment.not.authorized"));
         }
 
         comment.setContent(content);
@@ -122,12 +115,10 @@ public class CommentService {
 
     public void deleteComment(Long commentId, UserAccount currentUser) {
         Comment comment = commentRepository.findById(commentId)
-            .orElseThrow(() -> new ServiceException(
-                MessageUtil.getMessage("comment.not.found")));
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("comment.not.found")));
 
         if (!comment.getAuthor().getId().equals(currentUser.getId())) {
-            throw new ServiceException(
-                MessageUtil.getMessage("comment.not.authorized"));
+            throw new ServiceException(MessageUtil.getMessage("comment.not.authorized"));
         }
 
         List<Comment> replies = commentRepository.findByParentCommentIdOrderByCreatedAtAsc(comment.getId());
@@ -141,7 +132,20 @@ public class CommentService {
     @Transactional(readOnly = true)
     public Comment getCommentById(Long commentId) {
         return commentRepository.findById(commentId)
-            .orElseThrow(() -> new ServiceException(
-                MessageUtil.getMessage("comment.not.found")));
+                .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("comment.not.found")));
     }
+    
+    public Comment createComment(Long postId, UserAccount author, String content) {
+        return createComment(author, postId, content);
+    }
+    
+    public Comment replyToComment(Long commentId, UserAccount author, String content) {
+        return createReply(author, commentId, content);
+    }
+    
+    public Page<Comment> getCommentReplies(Long commentId, Pageable pageable) {
+        List<Comment> replies = getCommentReplies(commentId);
+        return new org.springframework.data.domain.PageImpl<>(replies, pageable, replies.size());
+    }
+    
 }

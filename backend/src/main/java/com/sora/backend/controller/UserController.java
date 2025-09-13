@@ -1,6 +1,7 @@
 package com.sora.backend.controller;
 
 import com.sora.backend.dto.*;
+import com.sora.backend.exception.ServiceException;
 import com.sora.backend.model.UserAccount;
 import com.sora.backend.service.FollowService;
 import com.sora.backend.service.UserAccountService;
@@ -76,7 +77,7 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<UserProfileDto> getUserProfile(@Parameter(description = "User ID") @PathVariable Long userId, Authentication authentication) {
         Optional<UserAccount> userOpt = userAccountService.findById(userId);
-        if (userOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (userOpt.isEmpty()) throw new ServiceException(MessageUtil.getMessage("user.not.found"));
         UserAccount user = userOpt.get();
         UserAccount currentUser = getCurrentUser(authentication);
         UserProfileDto profile = mapToUserProfileDto(user, currentUser, false);
@@ -88,7 +89,7 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Search results retrieved successfully")
     @ApiResponse(responseCode = "400", description = "Search query too short")
     public ResponseEntity<Page<UserSearchResultDto>> searchUsers(@Parameter(description = "Search query (min 2 chars)") @RequestParam("q") String query, @Parameter(description = "Filter by country code") @RequestParam(value = "countryCode", required = false) String countryCode, @Parameter(description = "Page number") @RequestParam(value = "page", defaultValue = "0") int page, @Parameter(description = "Page size") @RequestParam(value = "size", defaultValue = "20") int size, Authentication authentication) {
-        if (query == null || query.trim().length() < 2) return ResponseEntity.badRequest().build();
+        if (query == null || query.trim().length() < 2) throw new ServiceException(MessageUtil.getMessage("user.search.query.too.short"));
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by("username"));
         Page<UserAccount> users = userAccountService.searchUsers(query.trim(), pageable);
         UserAccount currentUser = getCurrentUser(authentication);
@@ -103,20 +104,21 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<FollowDto> followUser(@Parameter(description = "User ID to follow") @PathVariable Long userId, Authentication authentication) {
         UserAccount follower = getCurrentUser(authentication);
-        if (follower.getId().equals(userId)) return ResponseEntity.badRequest().build();
-        if (!userAccountService.findById(userId).isPresent()) return ResponseEntity.notFound().build();
+        if (follower.getId().equals(userId)) throw new ServiceException(MessageUtil.getMessage("user.follow.cannot.follow.yourself"));
+        if (!userAccountService.findById(userId).isPresent()) throw new ServiceException(MessageUtil.getMessage("user.not.found"));
         var follow = followService.followUser(follower, userId);
         return ResponseEntity.status(201).body(mapToFollowDto(follow));
     }
 
     @DeleteMapping("/{userId}/follow")
     @Operation(summary = "Unfollow user", description = "Stop following a user")
-    @ApiResponse(responseCode = "204", description = "User unfollowed successfully")
+    @ApiResponse(responseCode = "200", description = "User unfollowed successfully")
     @ApiResponse(responseCode = "404", description = "User not found or not following")
-    public ResponseEntity<Void> unfollowUser(@Parameter(description = "User ID to unfollow") @PathVariable Long userId, Authentication authentication) {
+    public ResponseEntity<MessageResponseDto> unfollowUser(@Parameter(description = "User ID to unfollow") @PathVariable Long userId, Authentication authentication) {
         UserAccount follower = getCurrentUser(authentication);
         followService.unfollowUser(follower, userId);
-        return ResponseEntity.noContent().build();
+        MessageResponseDto response = new MessageResponseDto(MessageUtil.getMessage("user.unfollowed.success"));
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{userId}/followers")

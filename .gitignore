@@ -452,6 +452,7 @@ checkpoints/
 .claude-code/
 claude-cache/
 .claude-dev/
+docs/
 
 # =====================================
 # BACKUP & TEMPORARY

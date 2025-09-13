@@ -24,14 +24,14 @@ public class CloudinaryService {
 
         validateImageFile(file);
 
-        Map<String, Object> uploadParams = ObjectUtils.asMap(
+        Map uploadParams = ObjectUtils.asMap(
                 "folder", folder,
                 "resource_type", "image",
                 "quality", "auto",
                 "fetch_format", "auto"
         );
 
-        Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
+        Map uploadResult = cloudinary.uploader().upload(file.getBytes(), uploadParams);
 
         return new CloudinaryUploadResult(
                 (String) uploadResult.get("public_id"),

@@ -48,7 +48,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT COUNT(DISTINCT p.cityName) FROM Post p WHERE p.profileOwner.id = :userId")
     long countDistinctCitiesByProfileOwnerId(@Param("userId") Long userId);
     
-    @Query("SELECT DISTINCT p.country FROM Post p WHERE p.profileOwner.id = :userId ORDER BY MAX(p.createdAt) DESC")
+    @Query("SELECT c FROM Country c WHERE c.id IN (SELECT DISTINCT p.country.id FROM Post p WHERE p.profileOwner.id = :userId) ORDER BY (SELECT MAX(p2.createdAt) FROM Post p2 WHERE p2.profileOwner.id = :userId AND p2.country.id = c.id) DESC")
     List<Country> findDistinctCountriesByProfileOwnerId(@Param("userId") Long userId);
     
     @Query("SELECT MIN(p.createdAt) FROM Post p WHERE p.profileOwner.id = :userId AND p.country.id = :countryId")
@@ -68,4 +68,34 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     
     @Query("SELECT new com.sora.backend.dto.LastActiveCountryDto(c.code, c.nameKey, MAX(p.createdAt), CAST(COUNT(p) AS int)) FROM Post p JOIN p.country c WHERE p.profileOwner.id = :userId GROUP BY c.code, c.nameKey ORDER BY MAX(p.createdAt) DESC")
     List<LastActiveCountryDto> findLastActiveCountriesByUserId(@Param("userId") Long userId);
+    
+    @Query("SELECT p FROM Post p WHERE p.profileOwner.id IN :userIds AND p.createdAt >= :since ORDER BY p.createdAt DESC")
+    List<Post> findRecentPostsByFollowedUsers(@Param("userIds") List<Long> userIds, @Param("since") LocalDateTime since);
+    
+    @Query("SELECT p FROM Post p WHERE p.profileOwner.id IN :userIds AND p.country.code = :countryCode AND p.createdAt >= :since ORDER BY p.createdAt DESC")
+    Page<Post> findRecentPostsByFollowedUsersInCountry(@Param("userIds") List<Long> userIds, @Param("countryCode") String countryCode, @Param("since") LocalDateTime since, Pageable pageable);
+    
+    @Query("SELECT p FROM Post p WHERE p.createdAt >= :since ORDER BY p.createdAt DESC")
+    List<Post> findRecentPostsGlobally(@Param("since") LocalDateTime since);
+    
+    @Query("SELECT c FROM Country c JOIN Post p ON p.country.id = c.id WHERE p.createdAt >= :since GROUP BY c.id ORDER BY COUNT(p) DESC")
+    List<Country> findMostPopularCountriesByPosts(@Param("since") LocalDateTime since, Pageable pageable);
+    
+    @Query("SELECT DISTINCT p.cityName FROM Post p WHERE p.profileOwner.id = :userId AND p.country.id = :countryId")
+    List<String> findDistinctCitiesByUserAndCountry(@Param("userId") Long userId, @Param("countryId") Long countryId);
+    
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.profileOwner.id = :userId AND p.country.id = :countryId AND p.createdAt >= :since")
+    long countByProfileOwnerIdAndCountryIdAndCreatedAtAfter(@Param("userId") Long userId, @Param("countryId") Long countryId, @Param("since") LocalDateTime since);
+    
+    @Query("SELECT p.cityName FROM Post p WHERE p.profileOwner.id = :userId AND p.country.id = :countryId ORDER BY p.createdAt DESC LIMIT 1")
+    String findLastCityVisitedInCountry(@Param("userId") Long userId, @Param("countryId") Long countryId);
+    
+    @Query("SELECT p FROM Post p WHERE p.profileOwner.id = :profileOwnerId AND p.country.id = :countryId AND p.collection.id = :collectionId AND p.cityName = :cityName ORDER BY p.createdAt DESC")
+    Page<Post> findByProfileOwnerIdAndCountryIdAndCollectionIdAndCityNameOrderByCreatedAtDesc(@Param("profileOwnerId") Long profileOwnerId, @Param("countryId") Long countryId, @Param("collectionId") Long collectionId, @Param("cityName") String cityName, Pageable pageable);
+    
+    @Query("SELECT p FROM Post p WHERE p.profileOwner.id = :profileOwnerId AND p.country.id = :countryId AND p.cityName = :cityName ORDER BY p.createdAt DESC")
+    Page<Post> findByProfileOwnerIdAndCountryIdAndCityNameOrderByCreatedAtDesc(@Param("profileOwnerId") Long profileOwnerId, @Param("countryId") Long countryId, @Param("cityName") String cityName, Pageable pageable);
+    
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.author.id = :authorId AND p.country.id = :countryId AND p.profileOwner.id = :profileOwnerId AND p.createdAt >= :createdAt")
+    long countByAuthorIdAndCountryIdAndProfileOwnerIdAndCreatedAtAfter(@Param("authorId") Long authorId, @Param("countryId") Long countryId, @Param("profileOwnerId") Long profileOwnerId, @Param("createdAt") LocalDateTime createdAt);
 }

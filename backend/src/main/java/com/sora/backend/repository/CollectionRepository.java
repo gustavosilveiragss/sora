@@ -14,6 +14,9 @@ public interface CollectionRepository extends JpaRepository<Collection, Long> {
     @Query("SELECT c FROM Collection c WHERE c.code = :code")
     Optional<Collection> findByCode(@Param("code") String code);
     
-    @Query("SELECT c FROM Collection c ORDER BY c.sortOrder")
-    List<Collection> findAllByOrderBySortOrder();
+    @Query("SELECT c FROM Collection c ORDER BY c.sortOrder ASC")
+    List<Collection> findAllByOrderBySortOrderAsc();
+    
+    @Query("SELECT c FROM Collection c WHERE c.isDefault = true")
+    Optional<Collection> findByIsDefaultTrue();
 }

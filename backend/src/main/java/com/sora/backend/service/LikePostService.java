@@ -32,8 +32,15 @@ public class LikePostService {
 
     public LikePost likePost(UserAccount user, Long postId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new ServiceException(MessageUtil.getMessage("post.not.found")));
+        
+        if (post.getAuthor() != null && post.getAuthor().getId().equals(user.getId())) {
+            throw new ServiceException(MessageUtil.getMessage("like.own.post"));
+        }
+        
         Optional<LikePost> existingLikeOpt = likePostRepository.findByUserIdAndPostId(user.getId(), postId);
-        if (existingLikeOpt.isPresent()) throw new ServiceException(MessageUtil.getMessage("like.already.liked"));
+
+        if (existingLikeOpt.isPresent())
+            throw new ServiceException(MessageUtil.getMessage("like.already.liked"));
 
         LikePost like = new LikePost();
         like.setUser(user);
@@ -52,7 +59,10 @@ public class LikePostService {
     public void unlikePost(UserAccount user, Long postId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new ServiceException(MessageUtil.getMessage("post.not.found")));
         Optional<LikePost> likeOpt = likePostRepository.findByUserIdAndPostId(user.getId(), postId);
-        if (!likeOpt.isPresent()) throw new ServiceException(MessageUtil.getMessage("like.not.liked"));
+
+        if (likeOpt.isEmpty())
+            throw new ServiceException(MessageUtil.getMessage("like.not.liked"));
+
         likePostRepository.deleteByUserIdAndPostId(user.getId(), postId);
     }
 
@@ -63,11 +73,24 @@ public class LikePostService {
 
     @Transactional(readOnly = true)
     public long getPostLikesCount(Long postId) {
+        // Verify post exists first
+        postRepository.findById(postId).orElseThrow(() -> new ServiceException(MessageUtil.getMessage("post.not.found")));
         return likePostRepository.countByPostId(postId);
     }
 
     @Transactional(readOnly = true)
     public Page<LikePost> getPostLikes(Long postId, Pageable pageable) {
+        // Verify post exists first
+        postRepository.findById(postId).orElseThrow(() -> new ServiceException(MessageUtil.getMessage("post.not.found")));
         return likePostRepository.findByPostId(postId, pageable);
     }
+    
+    public LikePost likePost(Long postId, UserAccount user) {
+        return likePost(user, postId);
+    }
+    
+    public void unlikePost(Long postId, UserAccount user) {
+        unlikePost(user, postId);
+    }
+    
 }

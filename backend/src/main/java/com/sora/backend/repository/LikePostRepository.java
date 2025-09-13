@@ -6,6 +6,7 @@ import com.sora.backend.model.UserAccount;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -27,6 +28,7 @@ public interface LikePostRepository extends JpaRepository<LikePost, Long> {
     @Query("SELECT lp FROM LikePost lp WHERE lp.post.id = :postId ORDER BY lp.createdAt DESC")
     Page<LikePost> findByPostId(@Param("postId") Long postId, Pageable pageable);
     
+    @Modifying
     @Query("DELETE FROM LikePost lp WHERE lp.user.id = :userId AND lp.post.id = :postId")
     void deleteByUserIdAndPostId(@Param("userId") Long userId, @Param("postId") Long postId);
     

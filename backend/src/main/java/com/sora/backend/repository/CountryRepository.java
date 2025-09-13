@@ -14,6 +14,6 @@ public interface CountryRepository extends JpaRepository<Country, Long> {
     @Query("SELECT c FROM Country c WHERE c.code = :code")
     Optional<Country> findByCode(@Param("code") String code);
     
-    @Query("SELECT c FROM Country c ORDER BY c.nameKey")
-    List<Country> findAllByOrderByNameKey();
+    @Query("SELECT c FROM Country c ORDER BY c.nameKey ASC")
+    List<Country> findAllByOrderByNameKeyAsc();
 }

@@ -3,6 +3,7 @@ package com.sora.backend.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 
 @Entity
 @Table(name = "post")
@@ -49,6 +50,16 @@ public class Post extends BaseEntity {
 
     @Column(name = "shared_post_group_id", length = 36)
     private String sharedPostGroupId;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OrderBy("sortOrder")
+    private List<PostMedia> media;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<LikePost> likes;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Comment> comments;
     
     public Post() {}
     
@@ -148,5 +159,37 @@ public class Post extends BaseEntity {
     
     public boolean isOwnedByAuthor() {
         return author.equals(profileOwner);
+    }
+
+    public List<PostMedia> getMedia() {
+        return media != null ? media : java.util.List.of();
+    }
+
+    public void setMedia(List<PostMedia> media) {
+        this.media = media;
+    }
+
+    public List<LikePost> getLikes() {
+        return likes != null ? likes : java.util.List.of();
+    }
+
+    public void setLikes(List<LikePost> likes) {
+        this.likes = likes;
+    }
+
+    public List<Comment> getComments() {
+        return comments != null ? comments : java.util.List.of();
+    }
+
+    public void setComments(List<Comment> comments) {
+        this.comments = comments;
+    }
+
+    public Integer getLikesCount() {
+        return likes != null ? likes.size() : 0;
+    }
+
+    public Integer getCommentsCount() {
+        return comments != null ? comments.size() : 0;
     }
 }

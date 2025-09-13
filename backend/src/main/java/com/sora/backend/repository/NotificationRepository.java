@@ -28,4 +28,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     
     @Query("DELETE FROM Notification n WHERE n.recipient.id = :recipientId AND n.createdAt < :before")
     void deleteByRecipientIdAndCreatedAtBefore(@Param("recipientId") Long recipientId, @Param("before") LocalDateTime before);
+    
+    @Query("SELECT n FROM Notification n WHERE n.recipient.id = :recipientId AND n.isRead = :isRead AND n.type = :type ORDER BY n.createdAt DESC")
+    Page<Notification> findByRecipientIdAndIsReadAndType(@Param("recipientId") Long recipientId, @Param("isRead") Boolean isRead, @Param("type") com.sora.backend.model.NotificationType type, Pageable pageable);
+    
+    @Query("SELECT n FROM Notification n WHERE n.recipient.id = :recipientId AND n.type = :type ORDER BY n.createdAt DESC")
+    Page<Notification> findByRecipientIdAndType(@Param("recipientId") Long recipientId, @Param("type") com.sora.backend.model.NotificationType type, Pageable pageable);
 }

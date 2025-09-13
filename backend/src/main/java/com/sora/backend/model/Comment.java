@@ -22,6 +22,9 @@ public class Comment extends BaseEntity {
     @JoinColumn(name = "parent_comment_id")
     private Comment parentComment;
     
+    @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private java.util.List<Comment> replies = new java.util.ArrayList<>();
+    
     @Column(name = "content", nullable = false)
     @NotBlank
     private String content;

@@ -5,6 +5,7 @@ import com.sora.backend.model.UserAccount;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -36,6 +37,13 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     @Query("SELECT f.following FROM Follow f WHERE f.follower.id = :followerId")
     List<UserAccount> findFollowingByFollowerId(@Param("followerId") Long followerId);
     
+    @Modifying
     @Query("DELETE FROM Follow f WHERE f.follower.id = :followerId AND f.following.id = :followingId")
     void deleteByFollowerIdAndFollowingId(@Param("followerId") Long followerId, @Param("followingId") Long followingId);
+    
+    @Query("SELECT f.following.id FROM Follow f WHERE f.follower.id = :followerId")
+    List<Long> findFollowingUserIds(@Param("followerId") Long followerId);
+    
+    @Query("SELECT COUNT(f) FROM Follow f WHERE f.follower.id = :userId")
+    long countFollowersByUserId(@Param("userId") Long userId);
 }
