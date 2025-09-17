@@ -39,8 +39,9 @@ fun HomeScreen(
                     Text(stringResource(R.string.loading))
                 }
                 uiState.error != null -> {
+                    val error = uiState.error
                     Text(
-                        text = stringResource(R.string.error_message, uiState.error),
+                        text = stringResource(R.string.error_message, error ?: "Unknown error"),
                         color = MaterialTheme.colorScheme.error
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -49,8 +50,9 @@ fun HomeScreen(
                     }
                 }
                 uiState.message != null -> {
+                    val message = uiState.message
                     Text(
-                        text = uiState.message.content,
+                        text = message?.content ?: "",
                         style = MaterialTheme.typography.headlineMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))

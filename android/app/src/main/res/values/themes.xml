@@ -1,10 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.SoraAndroid" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+<resources>
+    <style name="Base.Theme.SoraAndroid" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">#FF3040</item>
+        <item name="android:colorPrimaryDark">#E91E63</item>
+        <item name="android:colorAccent">#FF3040</item>
+        <item name="android:colorBackground">#121212</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:statusBarColor">#121212</item>
+        <item name="android:navigationBarColor">#121212</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <style name="Theme.SoraAndroid" parent="Base.Theme.SoraAndroid" />
+
+    <style name="Theme.SoraAndroid.Splash" parent="Base.Theme.SoraAndroid">
+        <item name="android:windowBackground">#121212</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
 </resources>
