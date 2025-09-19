@@ -1,5 +1,6 @@
 package com.sora.backend.exception;
 
+import com.sora.backend.util.MessageUtil;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -17,59 +18,83 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleEntityNotFound(EntityNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("error.entity.not_found"));
+        String messageKey = "error.entity.not_found";
+        String message = MessageUtil.getMessage(messageKey);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("error.validation.failed"));
+        String messageKey = "error.validation.failed";
+        String message = MessageUtil.getMessage(messageKey);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse> handleMissingServletRequestParameter(MissingServletRequestParameterException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("error.validation.failed"));
+        String messageKey = "error.validation.failed";
+        String message = MessageUtil.getMessage(messageKey);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseEntity<ErrorResponse> handleMissingServletRequestPart(MissingServletRequestPartException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("error.validation.failed"));
+        String messageKey = "error.validation.failed";
+        String message = MessageUtil.getMessage(messageKey);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String messageKey;
         if (ex.getMessage().contains("duplicate") || ex.getMessage().contains("unique")) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("error.data.duplicate"));
+            messageKey = "error.data.duplicate";
+        } else {
+            messageKey = "error.data.integrity";
         }
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse("error.data.integrity"));
+        String message = MessageUtil.getMessage(messageKey);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(InvalidDataAccessApiUsageException.class)
     public ResponseEntity<ErrorResponse> handleInvalidDataAccess(InvalidDataAccessApiUsageException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("error.data.invalid"));
+        String messageKey = "error.data.invalid";
+        String message = MessageUtil.getMessageOrDefault(messageKey, "Invalid data access");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse("error.auth.invalid_credentials"));
+        String messageKey = "error.auth.invalid_credentials";
+        String message = MessageUtil.getMessage(messageKey);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(ServiceException.class)
     public ResponseEntity<ErrorResponse> handleServiceException(ServiceException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(ex.getMessage()));
+        String messageKey = ex.getMessage();
+        String message = MessageUtil.getMessageOrDefault(messageKey, messageKey);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(ex.getMessage()));
+        String messageKey = ex.getMessage();
+        String message = MessageUtil.getMessageOrDefault(messageKey, messageKey);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(BusinessLogicException.class)
     public ResponseEntity<ErrorResponse> handleBusinessLogicException(BusinessLogicException ex) {
-        return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(ex.getMessage()));
+        String messageKey = ex.getMessage();
+        String message = MessageUtil.getMessageOrDefault(messageKey, messageKey);
+        return ResponseEntity.status(ex.getStatus()).body(new ErrorResponse(messageKey, message));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse("error.server.internal"));
+        String messageKey = "error.server.internal";
+        String message = MessageUtil.getMessage(messageKey);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(messageKey, message));
     }
 }

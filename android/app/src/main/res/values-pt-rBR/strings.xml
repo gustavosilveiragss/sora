@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Sora</string>
-    <string name="loading">Carregando…</string>
-    <string name="error_message">Erro: %1$s</string>
-    <string name="retry">Tentar novamente</string>
-    <string name="refresh">Atualizar</string>
-    <string name="load_hello_world">Carregar Hello World</string>
-</resources>

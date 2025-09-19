@@ -1,14 +1,20 @@
 package com.sora.android.di
 
+import android.content.Context
 import com.sora.android.BuildConfig
 import com.sora.android.core.config.ApiConfig
+import com.sora.android.data.local.TokenManager
 import com.sora.android.data.remote.ApiService
+import com.sora.android.data.remote.interceptor.AuthInterceptor
+import com.sora.android.data.remote.interceptor.TokenRefreshInterceptor
 import com.sora.android.data.repository.MessageRepositoryImpl
 import com.sora.android.domain.repository.MessageRepository
+import com.sora.android.core.error.NetworkErrorInterceptor
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -22,7 +28,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class NetworkModule {
-    
+
     @Binds
     abstract fun bindMessageRepository(
         messageRepositoryImpl: MessageRepositoryImpl
@@ -31,14 +37,24 @@ abstract class NetworkModule {
     companion object {
         @Provides
         @Singleton
+        fun provideTokenManager(@ApplicationContext context: Context): TokenManager {
+            return TokenManager(context)
+        }
+
+        @Provides
+        @Singleton
         fun provideJson(): Json = Json {
             ignoreUnknownKeys = true
             coerceInputValues = true
         }
-        
+
         @Provides
         @Singleton
-        fun provideOkHttpClient(): OkHttpClient {
+        fun provideOkHttpClient(
+            authInterceptor: AuthInterceptor,
+            tokenRefreshInterceptor: TokenRefreshInterceptor,
+            networkErrorInterceptor: NetworkErrorInterceptor
+        ): OkHttpClient {
             return OkHttpClient.Builder()
                 .addInterceptor(
                     HttpLoggingInterceptor().apply {
@@ -49,6 +65,9 @@ abstract class NetworkModule {
                         }
                     }
                 )
+                .addInterceptor(networkErrorInterceptor)
+                .addInterceptor(authInterceptor)
+                .addInterceptor(tokenRefreshInterceptor)
                 .connectTimeout(ApiConfig.CONNECT_TIMEOUT, TimeUnit.SECONDS)
                 .readTimeout(ApiConfig.READ_TIMEOUT, TimeUnit.SECONDS)
                 .writeTimeout(ApiConfig.WRITE_TIMEOUT, TimeUnit.SECONDS)

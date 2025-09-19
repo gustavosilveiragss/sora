@@ -29,6 +29,10 @@ spring:
   messages:
     basename: messages
     encoding: UTF-8
+
+  web:
+    locale: pt_BR
+    locale-resolver: fixed
     
   servlet:
     multipart:

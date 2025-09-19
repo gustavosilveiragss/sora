@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sora</string>
+    <string name="app_logo">Sora Logo</string>
+    <string name="tagline">Connect to the travelers world</string>
+
+    <string name="login">Login</string>
+    <string name="register">Create Account</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="username">Username</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="enter_email">Enter your email</string>
+    <string name="enter_password">Enter your password</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+    <string name="forgot_password">Forgot your password?</string>
+    <string name="already_have_account">Already have an account? Login</string>
+    <string name="dont_have_account">Don\'t have an account?</string>
+    <string name="sign_up">Sign up</string>
+
+    <string name="like">Like</string>
+    <string name="unlike">Unlike</string>
+    <string name="comment">Comment</string>
+    <string name="share">Share</string>
+    <string name="save">Save</string>
+    <string name="likes_count">%d likes</string>
+    <string name="like_single">%d like</string>
+    <string name="view_all_comments">View all %d comments</string>
+
+    <string name="camera">Camera</string>
+    <string name="direct_messages">Direct messages</string>
+    <string name="more_options">More options</string>
+    <string name="profile_picture">Profile picture</string>
+    <string name="post_image">Post image</string>
+
+    <string name="loading">Loading…</string>
+    <string name="error">Error</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="ok">OK</string>
+
+    <string name="error_network_connection">Server connection error</string>
+    <string name="error_network_timeout">Request timeout</string>
+    <string name="error_server_unavailable">Server unavailable</string>
+    <string name="error_unknown">Unknown error</string>
+    <string name="error_invalid_credentials">Invalid email or password</string>
+    <string name="error_validation">Invalid data</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+
+    <string name="time_ago">%s ago</string>
+    <string name="just_now">now</string>
+    <string name="one_minute">1m</string>
+    <string name="minutes">%dm</string>
+    <string name="one_hour">1h</string>
+    <string name="hours">%dh</string>
+    <string name="one_day">1d</string>
+    <string name="days">%dd</string>
+</resources>

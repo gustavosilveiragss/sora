@@ -86,6 +86,8 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.compose.icons.feather)
+    implementation(libs.compose.icons.tabler)
 
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
@@ -110,6 +112,8 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.paging.runtime.ktx)
     implementation(libs.androidx.paging.compose)
+
+    implementation(libs.androidx.datastore.preferences)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -4,7 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.sora.android.ui.screen.HomeScreen
+import androidx.navigation.compose.rememberNavController
+import com.sora.android.ui.navigation.SoraNavigation
 import com.sora.android.ui.theme.SoraTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -15,7 +16,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SoraTheme {
-                HomeScreen()
+                val navController = rememberNavController()
+                SoraNavigation(navController = navController)
             }
         }
     }
