@@ -15,6 +15,10 @@ data class User(
     val followersCount: Int = 0,
     val followingCount: Int = 0,
     val countriesVisitedCount: Int = 0,
+    val isActive: Boolean = true,
+    val role: String = "USER",
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
     val cacheTimestamp: Long = System.currentTimeMillis(),
     val isFullProfile: Boolean = false
 )

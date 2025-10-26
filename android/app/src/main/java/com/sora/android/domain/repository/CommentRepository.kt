@@ -25,8 +25,13 @@ interface CommentRepository {
     ): Flow<PagingData<CommentModel>>
 
     suspend fun getCachedComments(postId: Long): Flow<List<CommentModel>>
+    suspend fun getCachedCommentsAsList(postId: Long): List<CommentModel>
+    suspend fun getCommentRepliesAsList(commentId: Long): List<CommentModel>
     suspend fun refreshPostComments(postId: Long): Result<Unit>
 
     suspend fun getCommentsCount(postId: Long): Flow<Int>
     suspend fun getRepliesCount(commentId: Long): Flow<Int>
+
+    suspend fun likeComment(commentId: Long): Result<Unit>
+    suspend fun unlikeComment(commentId: Long): Result<Unit>
 }

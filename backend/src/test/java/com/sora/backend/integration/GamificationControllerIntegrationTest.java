@@ -128,14 +128,14 @@ class GamificationControllerIntegrationTest extends BaseIntegrationTest {
                         .header("Authorization", "Bearer " + testUser1Token))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$.countriesRankAmongFollowed").exists())
-                .andExpect(jsonPath("$.countriesRankAmongFollowed.position").value(1))
-                .andExpect(jsonPath("$.countriesRankAmongFollowed.totalUsers").value(2))
-                .andExpect(jsonPath("$.countriesRankAmongFollowed.percentile", closeTo(100.0, 0.1)))
-                .andExpect(jsonPath("$.postsRankAmongFollowed").exists())
-                .andExpect(jsonPath("$.postsRankAmongFollowed.position").value(1))
-                .andExpect(jsonPath("$.postsRankAmongFollowed.totalUsers").value(2))
-                .andExpect(jsonPath("$.postsRankAmongFollowed.percentile", closeTo(100.0, 0.1)));
+                .andExpect(jsonPath("$.countriesRankAmongMutuals").exists())
+                .andExpect(jsonPath("$.countriesRankAmongMutuals.position").value(1))
+                .andExpect(jsonPath("$.countriesRankAmongMutuals.totalUsers").value(2))
+                .andExpect(jsonPath("$.countriesRankAmongMutuals.percentile", closeTo(100.0, 0.1)))
+                .andExpect(jsonPath("$.postsRankAmongMutuals").exists())
+                .andExpect(jsonPath("$.postsRankAmongMutuals.position").value(1))
+                .andExpect(jsonPath("$.postsRankAmongMutuals.totalUsers").value(2))
+                .andExpect(jsonPath("$.postsRankAmongMutuals.percentile", closeTo(100.0, 0.1)));
     }
 
     @Test
@@ -254,12 +254,12 @@ class GamificationControllerIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/gamification/users/" + testUser2.getId() + "/rankings")
                         .header("Authorization", "Bearer " + testUser2Token))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.countriesRankAmongFollowed.position").value(2))
-                .andExpect(jsonPath("$.countriesRankAmongFollowed.totalUsers").value(2))
-                .andExpect(jsonPath("$.countriesRankAmongFollowed.percentile", closeTo(50.0, 0.1)))
-                .andExpect(jsonPath("$.postsRankAmongFollowed.position").value(2))
-                .andExpect(jsonPath("$.postsRankAmongFollowed.totalUsers").value(2))
-                .andExpect(jsonPath("$.postsRankAmongFollowed.percentile", closeTo(50.0, 0.1)));
+                .andExpect(jsonPath("$.countriesRankAmongMutuals.position").value(2))
+                .andExpect(jsonPath("$.countriesRankAmongMutuals.totalUsers").value(2))
+                .andExpect(jsonPath("$.countriesRankAmongMutuals.percentile", closeTo(50.0, 0.1)))
+                .andExpect(jsonPath("$.postsRankAmongMutuals.position").value(2))
+                .andExpect(jsonPath("$.postsRankAmongMutuals.totalUsers").value(2))
+                .andExpect(jsonPath("$.postsRankAmongMutuals.percentile", closeTo(50.0, 0.1)));
     }
 
     @Test

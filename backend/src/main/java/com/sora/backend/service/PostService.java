@@ -268,7 +268,7 @@ public class PostService {
         return likePostRepository.existsByUserIdAndPostId(userId, postId);
     }
 
-    public com.sora.backend.dto.CountryPostsResponseDto getCountryPosts(Long userId, String countryCode, String collectionCode, String cityName, org.springframework.data.domain.Pageable pageable) {
+    public com.sora.backend.dto.CountryPostsResponseDto getCountryPosts(Long userId, String countryCode, String collectionCode, String cityName, org.springframework.data.domain.Pageable pageable, UserAccount currentUser) {
         UserAccount user = userAccountRepository.findById(userId)
                 .orElseThrow(() -> new ServiceException(MessageUtil.getMessage("user.not.found")));
         Country country = countryRepository.findByCode(countryCode)
@@ -323,7 +323,7 @@ public class PostService {
                 countryDto,
                 userDto,
                 visitInfo,
-                posts.map(this::mapToPostResponseDto)
+                posts.map(post -> mapToPostResponseDto(post, currentUser))
         );
     }
 
@@ -342,6 +342,29 @@ public class PostService {
                 (int) likePostService.getPostLikesCount(post.getId()),
                 (int) commentService.getPostCommentsCount(post.getId()),
                 false,
+                post.getVisibilityType(),
+                post.getSharedPostGroupId(),
+                post.getCreatedAt(),
+                post.getUpdatedAt()
+        );
+    }
+
+    private com.sora.backend.dto.PostResponseDto mapToPostResponseDto(Post post, UserAccount currentUser) {
+        boolean isLikedByCurrentUser = currentUser != null && likePostService.isPostLikedByUser(currentUser, post.getId());
+        return new com.sora.backend.dto.PostResponseDto(
+                post.getId(),
+                mapToUserSummaryDto(post.getAuthor()),
+                mapToUserSummaryDto(post.getProfileOwner()),
+                mapToCountryDto(post.getCountry()),
+                mapToCollectionDto(post.getCollection()),
+                post.getCityName(),
+                post.getCityLatitude(),
+                post.getCityLongitude(),
+                post.getCaption(),
+                post.getMedia().stream().map(this::mapToMediaDto).toList(),
+                (int) likePostService.getPostLikesCount(post.getId()),
+                (int) commentService.getPostCommentsCount(post.getId()),
+                isLikedByCurrentUser,
                 post.getVisibilityType(),
                 post.getSharedPostGroupId(),
                 post.getCreatedAt(),

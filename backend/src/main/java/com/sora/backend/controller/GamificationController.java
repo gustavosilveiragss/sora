@@ -47,7 +47,7 @@ public class GamificationController {
     }
 
     @GetMapping("/leaderboard")
-    @Operation(summary = "Get travel leaderboard", description = "Get ranking of users based on travel metrics among followed users")
+    @Operation(summary = "Get travel leaderboard", description = "Get ranking of users based on travel metrics among mutual followers")
     @ApiResponse(responseCode = "200", description = "Leaderboard retrieved successfully")
     public ResponseEntity<LeaderboardResponseDto> getLeaderboard(@Parameter(description = "Ranking metric") @RequestParam(value = "metric", defaultValue = "countries") String metric, @Parameter(description = "Time period") @RequestParam(value = "timeframe", defaultValue = "all") String timeframe, @Parameter(description = "Limit results") @RequestParam(value = "limit", defaultValue = "20") int limit, Authentication authentication) {
         UserAccount currentUser = getCurrentUser(authentication);
@@ -59,7 +59,7 @@ public class GamificationController {
     }
 
     @GetMapping("/users/{userId}/rankings")
-    @Operation(summary = "Get user rankings", description = "Get user's position in various rankings among followed users")
+    @Operation(summary = "Get user rankings", description = "Get user's position in various rankings among mutual followers")
     @ApiResponse(responseCode = "200", description = "User rankings retrieved successfully")
     @ApiResponse(responseCode = "404", description = "User not found")
     public ResponseEntity<UserGamificationStatsResponseDto.RankingsDto> getUserRankings(@Parameter(description = "User ID") @PathVariable Long userId, Authentication authentication) {
@@ -97,11 +97,35 @@ public class GamificationController {
         if (userOpt.isEmpty()) {
             throw new ServiceException(MessageUtil.getMessage("user.not.found"));
         }
-        
+
         limit = Math.min(limit, 50);
         RecentDestinationsResponseDto destinations = gamificationService.getRecentDestinations(userId, limit);
-        
+
         return ResponseEntity.ok(destinations);
+    }
+
+    @GetMapping("/followers-leaderboard")
+    @Operation(summary = "Get followers leaderboard", description = "Get ranking of current user's followers based on travel metrics")
+    @ApiResponse(responseCode = "200", description = "Followers leaderboard retrieved successfully")
+    public ResponseEntity<LeaderboardResponseDto> getFollowersLeaderboard(@Parameter(description = "Ranking metric") @RequestParam(value = "metric", defaultValue = "countries") String metric, @Parameter(description = "Limit results") @RequestParam(value = "limit", defaultValue = "10") int limit, Authentication authentication) {
+        UserAccount currentUser = getCurrentUser(authentication);
+        limit = Math.min(limit, 100);
+
+        LeaderboardResponseDto leaderboard = gamificationService.getFollowersLeaderboard(currentUser, metric, limit);
+
+        return ResponseEntity.ok(leaderboard);
+    }
+
+    @GetMapping("/following-leaderboard")
+    @Operation(summary = "Get following leaderboard", description = "Get ranking of users that current user follows based on travel metrics")
+    @ApiResponse(responseCode = "200", description = "Following leaderboard retrieved successfully")
+    public ResponseEntity<LeaderboardResponseDto> getFollowingLeaderboard(@Parameter(description = "Ranking metric") @RequestParam(value = "metric", defaultValue = "countries") String metric, @Parameter(description = "Limit results") @RequestParam(value = "limit", defaultValue = "10") int limit, Authentication authentication) {
+        UserAccount currentUser = getCurrentUser(authentication);
+        limit = Math.min(limit, 100);
+
+        LeaderboardResponseDto leaderboard = gamificationService.getFollowingLeaderboard(currentUser, metric, limit);
+
+        return ResponseEntity.ok(leaderboard);
     }
 
     private UserAccount getCurrentUser(Authentication authentication) {

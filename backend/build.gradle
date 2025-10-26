@@ -51,6 +51,14 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+flyway {
+	url = env.DB_URL.orElse('jdbc:postgresql://localhost:5432/sora')
+	user = env.DB_USERNAME.orElse('sora')
+	password = env.DB_PASSWORD.orElse('sora')
+	locations = ['classpath:db/migration']
+	baselineOnMigrate = true
+}
+
 bootRun {
 	environment 'CLOUDINARY_CLOUD_NAME', env.CLOUDINARY_CLOUD_NAME.orNull()
 	environment 'CLOUDINARY_API_KEY', env.CLOUDINARY_API_KEY.orNull()

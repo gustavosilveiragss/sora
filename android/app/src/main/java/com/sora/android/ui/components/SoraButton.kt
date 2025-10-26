@@ -101,3 +101,40 @@ fun SoraTextButton(
         )
     }
 }
+
+@Composable
+fun SoraButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    isLoading: Boolean = false
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(48.dp),
+        enabled = enabled && !isLoading,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = SoraBlue,
+            contentColor = SoraWhite,
+            disabledContainerColor = SoraBlue.copy(alpha = 0.3f),
+            disabledContentColor = SoraWhite.copy(alpha = 0.6f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                color = SoraWhite,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Medium
+                )
+            )
+        }
+    }
+}

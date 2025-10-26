@@ -10,7 +10,7 @@ import androidx.navigation.compose.composable
 import com.sora.android.ui.screen.auth.LoginScreen
 import com.sora.android.ui.screen.auth.RegisterScreen
 import com.sora.android.ui.screen.auth.SplashScreen
-import com.sora.android.ui.screen.HomeScreen
+import com.sora.android.ui.screen.MainNavigationScreen
 import com.sora.android.ui.viewmodel.AuthViewModel
 
 @Composable
@@ -26,7 +26,7 @@ fun SoraNavigation(
         startDestination = if (!isInitialized) {
             SoraScreens.Splash.route
         } else if (isLoggedIn) {
-            SoraScreens.Home.route
+            SoraScreens.MainGlobe.route
         } else {
             SoraScreens.Login.route
         }
@@ -39,7 +39,7 @@ fun SoraNavigation(
                     }
                 },
                 onNavigateToHome = {
-                    navController.navigate(SoraScreens.Home.route) {
+                    navController.navigate(SoraScreens.MainGlobe.route) {
                         popUpTo(SoraScreens.Splash.route) { inclusive = true }
                     }
                 }
@@ -52,7 +52,7 @@ fun SoraNavigation(
                     navController.navigate(SoraScreens.Register.route)
                 },
                 onNavigateToHome = {
-                    navController.navigate(SoraScreens.Home.route) {
+                    navController.navigate(SoraScreens.MainGlobe.route) {
                         popUpTo(SoraScreens.Login.route) { inclusive = true }
                     }
                 }
@@ -65,15 +65,15 @@ fun SoraNavigation(
                     navController.popBackStack()
                 },
                 onNavigateToHome = {
-                    navController.navigate(SoraScreens.Home.route) {
+                    navController.navigate(SoraScreens.MainGlobe.route) {
                         popUpTo(SoraScreens.Register.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        composable(SoraScreens.Home.route) {
-            HomeScreen()
+        composable(SoraScreens.MainGlobe.route) {
+            MainNavigationScreen()
         }
     }
 }

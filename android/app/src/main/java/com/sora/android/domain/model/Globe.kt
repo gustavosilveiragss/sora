@@ -19,9 +19,13 @@ enum class GlobeType {
 @Serializable
 data class CountryMarkerModel(
     val countryCode: String,
+    val countryNameKey: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val recentPostsCount: Int,
+    val lastPostDate: String? = null,
     val activeUsers: List<UserModel> = emptyList(),
-    val recentPosts: List<PostModel> = emptyList()
+    val recentPosts: List<GlobePostModel> = emptyList()
 )
 
 @Serializable
@@ -29,4 +33,16 @@ data class CountryRecentPostsModel(
     val country: CountryModel,
     val posts: List<PostModel>,
     val totalPosts: Int
+)
+
+@Serializable
+data class GlobePostModel(
+    val id: Long,
+    val author: UserModel,
+    val cityName: String,
+    val thumbnailUrl: String? = null,
+    val likesCount: Int = 0,
+    val commentsCount: Int = 0,
+    val isLikedByCurrentUser: Boolean = false,
+    val createdAt: String
 )

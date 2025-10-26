@@ -44,6 +44,7 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val loginForm by viewModel.loginForm.collectAsState()
     val focusManager = LocalFocusManager.current
+    val scrollState = rememberScrollState()
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isLoginSuccess) {
@@ -59,10 +60,12 @@ fun LoginScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(paddingValues)
             .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(scrollState)
+            .imePadding(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -176,8 +179,6 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.primary
             )
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
 
         Row(
             verticalAlignment = Alignment.CenterVertically

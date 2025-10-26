@@ -15,5 +15,6 @@ public record CountryCollectionResponseDto(
     Integer postsCount,
     List<String> citiesVisited,
     List<UserSummaryDto> activeCollaborators,
-    Boolean hasActivePermissions
+    Boolean hasActivePermissions,
+    String latestPostImageUrl
 ) {}

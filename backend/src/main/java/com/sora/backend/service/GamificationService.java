@@ -51,6 +51,7 @@ public class GamificationService {
                 travelStats.totalLikesReceived(),
                 travelStats.totalCommentsReceived(),
                 (int) followRepository.countFollowersByUserId(userId),
+                (int) followRepository.countByFollowerId(userId),
                 user.getCreatedAt().toLocalDate(),
                 (int) java.time.temporal.ChronoUnit.DAYS.between(user.getCreatedAt().toLocalDate(), LocalDate.now()),
                 travelStats.countriesVisitedCount() > 0 ? (double) travelStats.totalPostsCount() / travelStats.countriesVisitedCount() : 0.0
@@ -80,31 +81,57 @@ public class GamificationService {
     }
 
     public LeaderboardResponseDto getLeaderboard(UserAccount currentUser, String metric, String timeframe, int limit) {
-        List<Long> followedUserIds = followRepository.findFollowingUserIds(currentUser.getId());
-        followedUserIds.add(currentUser.getId());
+        List<Long> mutualUserIds = followRepository.findMutualFollowerIds(currentUser.getId());
+        mutualUserIds.add(currentUser.getId());
 
-        List<UserAccount> users = userAccountRepository.findAllById(followedUserIds);
+        return buildLeaderboard(currentUser, mutualUserIds, metric, timeframe, limit);
+    }
+
+    public LeaderboardResponseDto getFollowersLeaderboard(UserAccount currentUser, String metric, int limit) {
+        List<Long> followerIds = followRepository.findByFollowingId(currentUser.getId(), org.springframework.data.domain.PageRequest.of(0, 1000))
+                .stream()
+                .map(follow -> follow.getFollower().getId())
+                .collect(Collectors.toList());
+
+        followerIds.add(currentUser.getId());
+
+        return buildLeaderboard(currentUser, followerIds, metric, "all", limit);
+    }
+
+    public LeaderboardResponseDto getFollowingLeaderboard(UserAccount currentUser, String metric, int limit) {
+        List<Long> followingIds = followRepository.findByFollowerId(currentUser.getId(), org.springframework.data.domain.PageRequest.of(0, 1000))
+                .stream()
+                .map(follow -> follow.getFollowing().getId())
+                .collect(Collectors.toList());
+
+        followingIds.add(currentUser.getId());
+
+        return buildLeaderboard(currentUser, followingIds, metric, "all", limit);
+    }
+
+    private LeaderboardResponseDto buildLeaderboard(UserAccount currentUser, List<Long> userIds, String metric, String timeframe, int limit) {
+        List<UserAccount> users = userAccountRepository.findAllById(userIds);
         List<LeaderboardResponseDto.LeaderboardEntryDto> entries = new ArrayList<>();
 
-        for (int i = 0; i < users.size() && i < limit; i++) {
-            UserAccount user = users.get(i);
+        for (UserAccount user : users) {
             int score = getScoreForMetric(user.getId(), metric, timeframe);
-            
+
             LeaderboardResponseDto.LeaderboardEntryDto entry = new LeaderboardResponseDto.LeaderboardEntryDto(
-                    i + 1,
+                    0,
                     mapToUserSummaryDto(user),
                     score,
                     getScoreName(metric),
                     user.getId().equals(currentUser.getId())
             );
-            
+
             entries.add(entry);
         }
 
         entries.sort((a, b) -> Integer.compare(b.score(), a.score()));
-        
-        for (int i = 0; i < entries.size(); i++) {
-            entries.set(i, new LeaderboardResponseDto.LeaderboardEntryDto(
+
+        List<LeaderboardResponseDto.LeaderboardEntryDto> limitedEntries = new ArrayList<>();
+        for (int i = 0; i < Math.min(entries.size(), limit); i++) {
+            limitedEntries.add(new LeaderboardResponseDto.LeaderboardEntryDto(
                     i + 1,
                     entries.get(i).user(),
                     entries.get(i).score(),
@@ -125,18 +152,18 @@ public class GamificationService {
                 metric,
                 timeframe,
                 currentUserPosition,
-                entries
+                limitedEntries
         );
     }
 
     public UserGamificationStatsResponseDto.RankingsDto getUserRankings(Long userId, UserAccount currentUser) {
-        List<Long> followedUserIds = followRepository.findFollowingUserIds(currentUser.getId());
-        followedUserIds.add(currentUser.getId());
+        List<Long> mutualUserIds = followRepository.findMutualFollowerIds(currentUser.getId());
+        mutualUserIds.add(currentUser.getId());
 
-        int totalUsers = followedUserIds.size();
-        
-        int countriesRank = calculateRankForMetric(userId, followedUserIds, "countries");
-        int postsRank = calculateRankForMetric(userId, followedUserIds, "posts");
+        int totalUsers = mutualUserIds.size();
+
+        int countriesRank = calculateRankForMetric(userId, mutualUserIds, "countries");
+        int postsRank = calculateRankForMetric(userId, mutualUserIds, "posts");
 
         UserGamificationStatsResponseDto.RankingPositionDto countriesRanking = new UserGamificationStatsResponseDto.RankingPositionDto(
                 countriesRank,

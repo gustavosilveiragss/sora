@@ -32,15 +32,12 @@ public class LikePostService {
 
     public LikePost likePost(UserAccount user, Long postId) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new ServiceException(MessageUtil.getMessage("post.not.found")));
-        
-        if (post.getAuthor() != null && post.getAuthor().getId().equals(user.getId())) {
-            throw new ServiceException(MessageUtil.getMessage("like.own.post"));
-        }
-        
+
         Optional<LikePost> existingLikeOpt = likePostRepository.findByUserIdAndPostId(user.getId(), postId);
 
-        if (existingLikeOpt.isPresent())
-            throw new ServiceException(MessageUtil.getMessage("like.already.liked"));
+        if (existingLikeOpt.isPresent()) {
+            return existingLikeOpt.get();
+        }
 
         LikePost like = new LikePost();
         like.setUser(user);
@@ -60,10 +57,9 @@ public class LikePostService {
         Post post = postRepository.findById(postId).orElseThrow(() -> new ServiceException(MessageUtil.getMessage("post.not.found")));
         Optional<LikePost> likeOpt = likePostRepository.findByUserIdAndPostId(user.getId(), postId);
 
-        if (likeOpt.isEmpty())
-            throw new ServiceException(MessageUtil.getMessage("like.not.liked"));
-
-        likePostRepository.deleteByUserIdAndPostId(user.getId(), postId);
+        if (likeOpt.isPresent()) {
+            likePostRepository.deleteByUserIdAndPostId(user.getId(), postId);
+        }
     }
 
     @Transactional(readOnly = true)

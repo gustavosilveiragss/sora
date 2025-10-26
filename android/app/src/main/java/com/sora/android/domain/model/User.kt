@@ -27,7 +27,8 @@ data class UserProfileModel(
     val profilePicture: String? = null,
     val followersCount: Int = 0,
     val followingCount: Int = 0,
-    val countriesVisitedCount: Int = 0
+    val countriesVisitedCount: Int = 0,
+    val isFollowedByCurrentUser: Boolean = false
 )
 
 @Serializable

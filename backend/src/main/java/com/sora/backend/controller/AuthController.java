@@ -66,7 +66,9 @@ public class AuthController {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
             Optional<UserAccount> userOpt = userAccountService.findByEmail(request.email());
-            if (userOpt.isEmpty()) throw new BadCredentialsException(MessageUtil.getMessage("auth.invalid.credentials"));
+            if (userOpt.isEmpty())
+                throw new BadCredentialsException(MessageUtil.getMessage("auth.invalid.credentials"));
+
             UserAccount user = userOpt.get();
             UserDetails userDetails = userAccountService.loadUserByUsername(user.getEmail());
             String accessToken = jwtUtil.generateAccessToken(userDetails);
@@ -75,9 +77,7 @@ public class AuthController {
             TokenResponseDto tokens = new TokenResponseDto(accessToken, refreshToken, jwtUtil.getAccessTokenExpiration());
             AuthResponseDto response = new AuthResponseDto("auth.login.success", userProfile, tokens);
             return ResponseEntity.ok(response);
-        } catch (BadCredentialsException e) {
-            throw e; // Let GlobalExceptionHandler handle this properly
-        } catch (ServiceException e) {
+        } catch (BadCredentialsException | ServiceException e) {
             throw e;
         } catch (Exception e) {
             throw new ServiceException(MessageUtil.getMessage("auth.login.failed"), e);
@@ -91,17 +91,19 @@ public class AuthController {
     public ResponseEntity<TokenRefreshResponseDto> refreshToken(@Valid @RequestBody RefreshTokenRequestDto request) {
         try {
             String refreshToken = request.refreshToken();
-            if (!jwtUtil.validateToken(refreshToken)) throw new BusinessLogicException("auth.token.invalid", MessageUtil.getMessage("auth.token.invalid"), HttpStatus.UNAUTHORIZED);
+            if (!jwtUtil.validateToken(refreshToken))
+                throw new BusinessLogicException("auth.token.invalid", MessageUtil.getMessage("auth.token.invalid"), HttpStatus.UNAUTHORIZED);
+
             String tokenType = jwtUtil.getTokenType(refreshToken);
-            if (!"refresh".equals(tokenType)) throw new BusinessLogicException("auth.token.invalid.type", MessageUtil.getMessage("auth.token.invalid.type"), HttpStatus.UNAUTHORIZED);
+            if (!"refresh".equals(tokenType))
+                throw new BusinessLogicException("auth.token.invalid.type", MessageUtil.getMessage("auth.token.invalid.type"), HttpStatus.UNAUTHORIZED);
+
             String username = jwtUtil.extractUsername(refreshToken);
             UserDetails userDetails = userAccountService.loadUserByUsername(username);
             String newAccessToken = jwtUtil.generateAccessToken(userDetails);
             TokenRefreshResponseDto response = new TokenRefreshResponseDto(newAccessToken, jwtUtil.getAccessTokenExpiration());
             return ResponseEntity.ok(response);
-        } catch (BusinessLogicException e) {
-            throw e;
-        } catch (ServiceException e) {
+        } catch (BusinessLogicException | ServiceException e) {
             throw e;
         } catch (Exception e) {
             throw new ServiceException(MessageUtil.getMessage("auth.token.refresh.failed"), e);

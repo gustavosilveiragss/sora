@@ -3,8 +3,6 @@ package com.sora.android.data.local.dao
 import androidx.paging.PagingSource
 import androidx.room.*
 import com.sora.android.data.local.entity.Post
-import com.sora.android.data.local.entity.DraftPost
-import com.sora.android.data.local.entity.SyncStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -12,6 +10,9 @@ interface PostDao {
 
     @Query("SELECT * FROM post ORDER BY createdAt DESC")
     fun getAllPostsPaged(): PagingSource<Int, Post>
+
+    @Query("SELECT * FROM post WHERE profileOwnerId IN (SELECT followingId FROM follow WHERE followerId = :userId) OR authorId = :userId ORDER BY createdAt DESC")
+    fun getFeedPosts(userId: Long): PagingSource<Int, Post>
 
     @Query("SELECT * FROM post ORDER BY cacheTimestamp DESC LIMIT :limit")
     suspend fun getRecentPosts(limit: Int): List<Post>
@@ -23,16 +24,31 @@ interface PostDao {
     fun getPostByIdFlow(postId: Long): Flow<Post?>
 
     @Query("SELECT * FROM post WHERE authorId = :authorId ORDER BY createdAt DESC")
-    suspend fun getPostsByAuthor(authorId: Long): List<Post>
+    fun getPostsByAuthor(authorId: Long): PagingSource<Int, Post>
 
-    @Query("SELECT * FROM post WHERE countryCode = :countryCode ORDER BY createdAt DESC")
-    suspend fun getPostsByCountry(countryCode: String): List<Post>
+    @Query("SELECT * FROM post WHERE profileOwnerId = :userId ORDER BY createdAt DESC")
+    fun getPostsByProfileOwner(userId: Long): PagingSource<Int, Post>
 
-    @Query("SELECT * FROM post WHERE countryCode = :countryCode AND collectionCode = :collectionCode ORDER BY createdAt DESC")
-    suspend fun getPostsByCountryAndCollection(countryCode: String, collectionCode: String): List<Post>
+    @Query("SELECT * FROM post WHERE countryCode = :countryCode AND profileOwnerId = :userId ORDER BY createdAt DESC")
+    fun getCountryPosts(countryCode: String, userId: Long): PagingSource<Int, Post>
+
+    @Query("SELECT * FROM post WHERE countryCode = :countryCode AND profileOwnerId = :userId AND collectionCode = :collectionCode ORDER BY createdAt DESC")
+    fun getCountryCollectionPosts(countryCode: String, userId: Long, collectionCode: String): PagingSource<Int, Post>
+
+    @Query("SELECT * FROM post WHERE countryCode = :countryCode AND profileOwnerId = :userId AND cityName = :cityName ORDER BY createdAt DESC")
+    fun getCityPosts(countryCode: String, userId: Long, cityName: String): PagingSource<Int, Post>
 
     @Query("SELECT * FROM post WHERE sharedPostGroupId = :groupId ORDER BY createdAt DESC")
     suspend fun getPostsBySharedGroup(groupId: String): List<Post>
+
+    @Query("SELECT COUNT(*) FROM post WHERE authorId = :userId")
+    suspend fun getUserPostsCount(userId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM post WHERE profileOwnerId = :userId")
+    suspend fun getProfilePostsCount(userId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM post WHERE countryCode = :countryCode AND profileOwnerId = :userId")
+    suspend fun getCountryPostsCount(countryCode: String, userId: Long): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPost(post: Post)
@@ -48,6 +64,12 @@ interface PostDao {
 
     @Query("DELETE FROM post WHERE id = :postId")
     suspend fun deletePostById(postId: Long)
+
+    @Query("UPDATE post SET likesCount = :likesCount, isLikedByCurrentUser = :isLiked WHERE id = :postId")
+    suspend fun updatePostLikeStatus(postId: Long, likesCount: Int, isLiked: Boolean)
+
+    @Query("UPDATE post SET commentsCount = :commentsCount WHERE id = :postId")
+    suspend fun updatePostCommentsCount(postId: Long, commentsCount: Int)
 
     @Query("DELETE FROM post WHERE cacheTimestamp < :expiry")
     suspend fun deleteExpiredPosts(expiry: Long): Int
@@ -69,37 +91,4 @@ interface PostDao {
             deleteOldestPostsExceedingLimit(maxPosts)
         }
     }
-
-    @Query("SELECT * FROM draft_post ORDER BY createdAt DESC")
-    suspend fun getAllDrafts(): List<DraftPost>
-
-    @Query("SELECT * FROM draft_post WHERE syncStatus = :status ORDER BY createdAt ASC")
-    suspend fun getDraftsByStatus(status: SyncStatus): List<DraftPost>
-
-    @Query("SELECT * FROM draft_post WHERE syncStatus = 'PENDING' ORDER BY createdAt ASC")
-    suspend fun getPendingDrafts(): List<DraftPost>
-
-    @Query("SELECT * FROM draft_post WHERE localId = :localId")
-    suspend fun getDraftById(localId: String): DraftPost?
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertDraft(draft: DraftPost)
-
-    @Update
-    suspend fun updateDraft(draft: DraftPost)
-
-    @Delete
-    suspend fun deleteDraft(draft: DraftPost)
-
-    @Query("DELETE FROM draft_post WHERE localId = :localId")
-    suspend fun deleteDraftById(localId: String)
-
-    @Query("UPDATE draft_post SET syncStatus = :status WHERE localId = :localId")
-    suspend fun updateDraftStatus(localId: String, status: SyncStatus)
-
-    @Query("DELETE FROM draft_post WHERE createdAt < :expiry")
-    suspend fun deleteExpiredDrafts(expiry: Long): Int
-
-    @Query("SELECT COUNT(*) FROM draft_post")
-    suspend fun getDraftCount(): Int
 }

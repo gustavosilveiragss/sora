@@ -115,10 +115,67 @@ fun ErrorSnackbar(
 }
 
 @Composable
+fun ErrorMessage(
+    message: String,
+    onRetry: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = SoraIcons.AlertCircle,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(48.dp)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = stringResource(R.string.error),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        if (onRetry != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(onClick = onRetry) {
+                Text(stringResource(R.string.retry))
+            }
+        }
+    }
+}
+
+object ErrorComponents {
+    @Composable
+    fun ErrorMessage(
+        message: String,
+        onRetry: (() -> Unit)? = null,
+        modifier: Modifier = Modifier
+    ) {
+        com.sora.android.ui.components.ErrorMessage(
+            message = message,
+            onRetry = onRetry,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
 private fun getErrorMessage(message: String, type: ErrorType): String {
     return when {
         message.startsWith("error_") -> {
-            // It's a string resource key
             when (message) {
                 "error_network_connection" -> stringResource(R.string.error_network_connection)
                 "error_network_timeout" -> stringResource(R.string.error_network_timeout)
@@ -130,7 +187,6 @@ private fun getErrorMessage(message: String, type: ErrorType): String {
             }
         }
         else -> {
-            // It's a direct message
             message.ifBlank { stringResource(R.string.error_generic) }
         }
     }

@@ -61,4 +61,52 @@ interface CountryDao {
 
     @Query("SELECT COUNT(*) FROM country_collection WHERE userId = :userId")
     suspend fun getCountriesVisitedCount(userId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM country_collection WHERE userId = :userId")
+    fun getCountriesVisitedCountFlow(userId: Long): Flow<Int>
+
+    @Query("UPDATE country_collection SET postsCount = postsCount + 1, lastVisitDate = :visitDate WHERE userId = :userId AND countryCode = :countryCode")
+    suspend fun incrementCountryPostsCount(userId: Long, countryCode: String, visitDate: String)
+
+    @Query("UPDATE country_collection SET postsCount = postsCount - 1 WHERE userId = :userId AND countryCode = :countryCode AND postsCount > 0")
+    suspend fun decrementCountryPostsCount(userId: Long, countryCode: String)
+
+    @Query("UPDATE country_collection SET visitCount = visitCount + 1, lastVisitDate = :visitDate WHERE userId = :userId AND countryCode = :countryCode")
+    suspend fun incrementCountryVisitCount(userId: Long, countryCode: String, visitDate: String)
+
+    @Query("UPDATE country SET cacheTimestamp = :timestamp WHERE id = :countryId")
+    suspend fun touchCountryCache(countryId: Long, timestamp: Long = System.currentTimeMillis())
+
+    @Query("UPDATE country_collection SET cacheTimestamp = :timestamp WHERE id = :collectionId")
+    suspend fun touchCountryCollectionCache(collectionId: String, timestamp: Long = System.currentTimeMillis())
+
+    @Query("SELECT COUNT(*) FROM country")
+    suspend fun getCountryCount(): Int
+
+    @Transaction
+    suspend fun createOrUpdateCountryCollection(
+        userId: Long,
+        countryId: Long,
+        countryCode: String,
+        countryNameKey: String,
+        visitDate: String
+    ) {
+        val existing = getCountryCollection(userId, countryCode)
+        if (existing != null) {
+            incrementCountryPostsCount(userId, countryCode, visitDate)
+        } else {
+            val newCollection = CountryCollection(
+                id = "${userId}_${countryCode}",
+                userId = userId,
+                countryId = countryId,
+                countryCode = countryCode,
+                countryNameKey = countryNameKey,
+                firstVisitDate = visitDate,
+                lastVisitDate = visitDate,
+                visitCount = 1,
+                postsCount = 1
+            )
+            insertCountryCollection(newCollection)
+        }
+    }
 }

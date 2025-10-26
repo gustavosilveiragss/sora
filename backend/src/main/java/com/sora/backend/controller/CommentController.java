@@ -8,6 +8,7 @@ import com.sora.backend.model.UserAccount;
 import com.sora.backend.repository.PostRepository;
 import com.sora.backend.service.CommentService;
 import com.sora.backend.service.FollowService;
+import com.sora.backend.service.LikeCommentService;
 import com.sora.backend.service.PostService;
 import com.sora.backend.service.UserAccountService;
 import com.sora.backend.util.MessageUtil;
@@ -36,14 +37,16 @@ public class CommentController {
     private final CommentService commentService;
     private final UserAccountService userAccountService;
     private final FollowService followService;
+    private final LikeCommentService likeCommentService;
 
     @Autowired
     private PostRepository postRepository;
 
-    public CommentController(CommentService commentService, UserAccountService userAccountService, FollowService followService) {
+    public CommentController(CommentService commentService, UserAccountService userAccountService, FollowService followService, LikeCommentService likeCommentService) {
         this.commentService = commentService;
         this.userAccountService = userAccountService;
         this.followService = followService;
+        this.likeCommentService = likeCommentService;
     }
 
     @GetMapping("/api/posts/{postId}/comments")
@@ -127,9 +130,40 @@ public class CommentController {
     public ResponseEntity<Page<CommentResponseDto>> getCommentReplies(@Parameter(description = "Comment ID") @PathVariable Long commentId, @Parameter(description = "Page number") @RequestParam(value = "page", defaultValue = "0") int page, @Parameter(description = "Page size") @RequestParam(value = "size", defaultValue = "20") int size, Authentication authentication) {
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by("createdAt").ascending());
         Page<Comment> replies = commentService.getCommentReplies(commentId, pageable);
-        
+
         Page<CommentResponseDto> responses = replies.map(reply -> mapToCommentResponseDto(reply, getCurrentUser(authentication)));
         return ResponseEntity.ok(responses);
+    }
+
+    @PostMapping("/api/comments/{commentId}/like")
+    @Operation(summary = "Like comment", description = "Like a comment")
+    @ApiResponse(responseCode = "200", description = "Comment liked successfully")
+    @ApiResponse(responseCode = "404", description = "Comment not found")
+    public ResponseEntity<MessageResponseDto> likeComment(@Parameter(description = "Comment ID") @PathVariable Long commentId, Authentication authentication) {
+        UserAccount currentUser = getCurrentUser(authentication);
+        likeCommentService.likeComment(currentUser, commentId);
+        MessageResponseDto response = new MessageResponseDto(MessageUtil.getMessage("comment.like.success"));
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/api/comments/{commentId}/like")
+    @Operation(summary = "Unlike comment", description = "Unlike a comment")
+    @ApiResponse(responseCode = "200", description = "Comment unliked successfully")
+    @ApiResponse(responseCode = "404", description = "Comment not found")
+    public ResponseEntity<MessageResponseDto> unlikeComment(@Parameter(description = "Comment ID") @PathVariable Long commentId, Authentication authentication) {
+        UserAccount currentUser = getCurrentUser(authentication);
+        likeCommentService.unlikeComment(currentUser, commentId);
+        MessageResponseDto response = new MessageResponseDto(MessageUtil.getMessage("comment.unlike.success"));
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/api/comments/{commentId}/likes/count")
+    @Operation(summary = "Get comment likes count", description = "Get number of likes for a comment")
+    @ApiResponse(responseCode = "200", description = "Likes count retrieved successfully")
+    @ApiResponse(responseCode = "404", description = "Comment not found")
+    public ResponseEntity<Long> getCommentLikesCount(@Parameter(description = "Comment ID") @PathVariable Long commentId) {
+        long count = likeCommentService.getCommentLikesCount(commentId);
+        return ResponseEntity.ok(count);
     }
 
     private UserAccount getCurrentUser(Authentication authentication) {
@@ -138,20 +172,22 @@ public class CommentController {
 
     private CommentResponseDto mapToCommentResponseDto(Comment comment, UserAccount currentUser) {
         UserSummaryDto authorDto = mapToUserSummaryDto(comment.getAuthor(), currentUser);
-        
+
         List<Comment> replies = commentService.getCommentReplies(comment.getId());
         if (replies == null) {
             replies = Collections.emptyList();
         }
-        
+
         int repliesCount = (int) commentService.getCommentRepliesCount(comment.getId());
-        
+        boolean isLiked = likeCommentService.isCommentLikedByUser(currentUser, comment.getId());
+
         return new CommentResponseDto(
                 comment.getId(),
                 authorDto,
                 comment.getContent(),
                 repliesCount,
                 replies.stream().map(c -> mapToCommentResponseDto(c, currentUser)).toList(),
+                isLiked,
                 comment.getCreatedAt(),
                 comment.getUpdatedAt()
         );

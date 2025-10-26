@@ -31,4 +31,7 @@ interface GamificationRepository {
     suspend fun calculateTravelScore(userId: Long): Flow<Int>
     suspend fun getUserPosition(userId: Long, metric: String): Flow<Int?>
     suspend fun getAchievements(userId: Long): Flow<List<AchievementModel>>
+
+    suspend fun getFollowersLeaderboard(metric: String, limit: Int): Result<LeaderboardModel>
+    suspend fun getFollowingLeaderboard(metric: String, limit: Int): Result<LeaderboardModel>
 }

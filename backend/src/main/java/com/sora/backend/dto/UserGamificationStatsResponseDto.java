@@ -17,14 +17,15 @@ public record UserGamificationStatsResponseDto(
         Integer totalLikesReceived,
         Integer totalCommentsReceived,
         Integer totalFollowers,
+        Integer totalFollowing,
         LocalDate joinedDate,
         Integer daysTraveling,
         Double averagePostsPerCountry
     ) {}
 
     public record RankingsDto(
-        RankingPositionDto countriesRankAmongFollowed,
-        RankingPositionDto postsRankAmongFollowed
+        RankingPositionDto countriesRankAmongMutuals,
+        RankingPositionDto postsRankAmongMutuals
     ) {}
 
     public record RankingPositionDto(

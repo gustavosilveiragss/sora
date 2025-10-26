@@ -67,13 +67,14 @@ public class CountryCollectionController {
         if (userOpt.isEmpty()) {
             throw new ServiceException(MessageUtil.getMessage("user.not.found"));
         }
-        
+
         UserAccount user = userOpt.get();
+        UserAccount currentUser = getCurrentUser(authentication);
         Sort.Direction direction = Sort.Direction.fromString(sortDirection);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100), Sort.by(direction, sortBy));
-        
-        CountryPostsResponseDto response = postService.getCountryPosts(userId, countryCode, collectionCode, cityName, pageable);
-        
+
+        CountryPostsResponseDto response = postService.getCountryPosts(userId, countryCode, collectionCode, cityName, pageable, currentUser);
+
         return ResponseEntity.ok(response);
     }
 

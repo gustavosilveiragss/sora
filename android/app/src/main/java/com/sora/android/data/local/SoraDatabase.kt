@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import android.content.Context
+import androidx.annotation.WorkerThread
 import com.sora.android.data.local.converter.StringListConverter
 import com.sora.android.data.local.dao.*
 import com.sora.android.data.local.entity.*
@@ -16,10 +17,18 @@ import com.sora.android.data.local.entity.*
         Country::class,
         CountryCollection::class,
         City::class,
-        DraftPost::class
+        DraftPost::class,
+        PostCollection::class,
+        Follow::class,
+        LikePost::class,
+        Comment::class,
+        TravelPermission::class,
+        Notification::class,
+        PostMedia::class,
+        CachedUserStats::class
     ],
-    version = 1,
-    exportSchema = false
+    version = 3,
+    exportSchema = true
 )
 @TypeConverters(StringListConverter::class)
 abstract class SoraDatabase : RoomDatabase() {
@@ -27,6 +36,16 @@ abstract class SoraDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun postDao(): PostDao
     abstract fun countryDao(): CountryDao
+    abstract fun cityDao(): CityDao
+    abstract fun collectionDao(): CollectionDao
+    abstract fun followDao(): FollowDao
+    abstract fun likePostDao(): LikePostDao
+    abstract fun commentDao(): CommentDao
+    abstract fun travelPermissionDao(): TravelPermissionDao
+    abstract fun notificationDao(): NotificationDao
+    abstract fun postMediaDao(): PostMediaDao
+    abstract fun draftPostDao(): DraftPostDao
+    abstract fun userStatsDao(): UserStatsDao
 
     companion object {
         const val DATABASE_NAME = "sora_database"

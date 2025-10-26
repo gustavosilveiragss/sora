@@ -38,6 +38,9 @@ interface ApiService {
     @GET("users/{id}")
     suspend fun getUserById(@Path("id") userId: Long): Response<UserProfileModel>
 
+    @GET("gamification/users/{userId}/stats")
+    suspend fun getUserTravelStats(@Path("userId") userId: Long): Response<UserGamificationStatsResponseDto>
+
     @GET("users/search")
     suspend fun searchUsers(
         @Query("q") query: String,
@@ -138,13 +141,19 @@ interface ApiService {
         @Path("id") postId: Long,
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 20
-    ): Response<PagedResponse<CommentModel>>
+    ): Response<PagedResponse<CommentResponseDto>>
 
     @PUT("comments/{id}")
     suspend fun updateComment(@Path("id") commentId: Long, @Body request: CommentCreateRequest): Response<CommentModel>
 
     @DELETE("comments/{id}")
     suspend fun deleteComment(@Path("id") commentId: Long): Response<Unit>
+
+    @POST("comments/{id}/like")
+    suspend fun likeComment(@Path("id") commentId: Long): Response<Unit>
+
+    @DELETE("comments/{id}/like")
+    suspend fun unlikeComment(@Path("id") commentId: Long): Response<Unit>
 
     // Travel Permissions
     @POST("travel-permissions")
@@ -221,10 +230,10 @@ interface ApiService {
         @Query("metric") metric: String = "countries",
         @Query("timeframe") timeframe: String = "all",
         @Query("limit") limit: Int = 20
-    ): Response<LeaderboardModel>
+    ): Response<LeaderboardResponseDto>
 
     @GET("gamification/users/{userId}/rankings")
-    suspend fun getUserRankings(@Path("userId") userId: Long): Response<RankingsModel>
+    suspend fun getUserRankings(@Path("userId") userId: Long): Response<RankingsDto>
 
     @GET("gamification/users/{userId}/countries-visited")
     suspend fun getCountriesVisited(@Path("userId") userId: Long): Response<CountryVisitedListResponse>
@@ -234,6 +243,21 @@ interface ApiService {
         @Path("userId") userId: Long,
         @Query("limit") limit: Int = 10
     ): Response<RecentDestinationsResponse>
+
+    @GET("gamification/followers-leaderboard")
+    suspend fun getFollowersLeaderboard(
+        @Query("metric") metric: String = "countries",
+        @Query("limit") limit: Int = 10
+    ): Response<LeaderboardResponseDto>
+
+    @GET("gamification/following-leaderboard")
+    suspend fun getFollowingLeaderboard(
+        @Query("metric") metric: String = "countries",
+        @Query("limit") limit: Int = 10
+    ): Response<LeaderboardResponseDto>
+
+    @GET("gamification/users/{userId}/stats")
+    suspend fun getUserGamificationStats(@Path("userId") userId: Long): Response<UserGamificationStatsResponseDto>
 
     // Location Services (Public endpoints)
     @GET("locations/countries")

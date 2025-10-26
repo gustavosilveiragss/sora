@@ -121,7 +121,7 @@ public class NotificationService {
         if (recipient.getId().equals(replier.getId())) {
             return null;
         }
-        
+
         Notification notification = new Notification();
         notification.setRecipient(recipient);
         notification.setType(NotificationType.COMMENT_REPLIED);
@@ -129,7 +129,23 @@ public class NotificationService {
         notification.setReferenceId(commentId.toString());
         notification.setIsRead(false);
         notification.setCreatedAt(LocalDateTime.now());
-        
+
+        return notificationRepository.save(notification);
+    }
+
+    public Notification createCommentLikedNotification(UserAccount recipient, UserAccount liker, com.sora.backend.model.Comment comment) {
+        if (recipient.getId().equals(liker.getId())) {
+            return null;
+        }
+
+        Notification notification = new Notification();
+        notification.setRecipient(recipient);
+        notification.setType(NotificationType.COMMENT_LIKED);
+        notification.setMessage(MessageUtil.getMessage("notification.comment.liked", liker.getUsername()));
+        notification.setReferenceId(comment.getId().toString());
+        notification.setIsRead(false);
+        notification.setCreatedAt(LocalDateTime.now());
+
         return notificationRepository.save(notification);
     }
 

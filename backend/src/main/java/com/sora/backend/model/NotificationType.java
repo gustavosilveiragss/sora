@@ -8,5 +8,6 @@ public enum NotificationType {
     TRAVEL_PERMISSION_REVOKED,
     POST_LIKED,
     POST_COMMENTED,
-    COMMENT_REPLIED
+    COMMENT_REPLIED,
+    COMMENT_LIKED
 }

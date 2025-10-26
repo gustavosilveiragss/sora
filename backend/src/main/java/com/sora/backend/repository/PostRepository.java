@@ -98,4 +98,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     
     @Query("SELECT COUNT(p) FROM Post p WHERE p.author.id = :authorId AND p.country.id = :countryId AND p.profileOwner.id = :profileOwnerId AND p.createdAt >= :createdAt")
     long countByAuthorIdAndCountryIdAndProfileOwnerIdAndCreatedAtAfter(@Param("authorId") Long authorId, @Param("countryId") Long countryId, @Param("profileOwnerId") Long profileOwnerId, @Param("createdAt") LocalDateTime createdAt);
+
+    @Query("SELECT pm.cloudinaryUrl FROM PostMedia pm JOIN pm.post p WHERE p.profileOwner.id = :userId AND p.country.id = :countryId AND pm.mediaType = 'IMAGE' ORDER BY p.createdAt DESC, pm.sortOrder ASC LIMIT 1")
+    String findLatestPostImageUrlByUserAndCountry(@Param("userId") Long userId, @Param("countryId") Long countryId);
 }

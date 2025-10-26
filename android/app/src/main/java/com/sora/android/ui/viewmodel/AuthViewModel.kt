@@ -6,7 +6,10 @@ import com.sora.android.domain.model.LoginRequest
 import com.sora.android.domain.model.RegisterRequest
 import com.sora.android.domain.repository.AuthRepository
 import com.sora.android.core.error.ErrorManager
+import com.sora.android.R
+import android.content.Context
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,7 +51,8 @@ data class RegisterFormState(
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    val errorManager: ErrorManager
+    val errorManager: ErrorManager,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -119,7 +123,7 @@ class AuthViewModel @Inject constructor(
         val passwordError = validatePassword(password)
         val confirmPasswordError = if (_registerForm.value.confirmPassword.isNotEmpty() &&
             _registerForm.value.confirmPassword != password) {
-            "As senhas não coincidem"
+            context.getString(R.string.validation_passwords_mismatch)
         } else null
 
         _registerForm.value = _registerForm.value.copy(
@@ -132,7 +136,7 @@ class AuthViewModel @Inject constructor(
 
     fun updateRegisterConfirmPassword(confirmPassword: String) {
         val confirmPasswordError = if (confirmPassword != _registerForm.value.password) {
-            "As senhas não coincidem"
+            context.getString(R.string.validation_passwords_mismatch)
         } else null
 
         _registerForm.value = _registerForm.value.copy(
@@ -143,7 +147,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun updateRegisterFirstName(firstName: String) {
-        val firstNameError = validateName(firstName, "Nome")
+        val firstNameError = validateName(firstName, context.getString(R.string.validation_first_name))
         _registerForm.value = _registerForm.value.copy(
             firstName = firstName,
             firstNameError = firstNameError
@@ -152,7 +156,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun updateRegisterLastName(lastName: String) {
-        val lastNameError = validateName(lastName, "Sobrenome")
+        val lastNameError = validateName(lastName, context.getString(R.string.validation_last_name))
         _registerForm.value = _registerForm.value.copy(
             lastName = lastName,
             lastNameError = lastNameError
@@ -178,37 +182,37 @@ class AuthViewModel @Inject constructor(
 
     private fun validateEmail(email: String): String? {
         return when {
-            email.isEmpty() -> "Email é obrigatório"
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Email inválido"
+            email.isEmpty() -> context.getString(R.string.validation_email_required)
+            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> context.getString(R.string.validation_email_invalid)
             else -> null
         }
     }
 
     private fun validatePassword(password: String): String? {
         return when {
-            password.isEmpty() -> "Senha é obrigatória"
-            password.length < 6 -> "Senha deve ter pelo menos 6 caracteres"
-            !password.any { it.isUpperCase() } -> "Senha deve conter pelo menos uma letra maiúscula"
-            !password.any { it.isLowerCase() } -> "Senha deve conter pelo menos uma letra minúscula"
-            !password.any { it.isDigit() } -> "Senha deve conter pelo menos um número"
-            !password.any { !it.isLetterOrDigit() } -> "Senha deve conter pelo menos um caractere especial"
+            password.isEmpty() -> context.getString(R.string.validation_password_required)
+            password.length < 6 -> context.getString(R.string.validation_password_min_length)
+            !password.any { it.isUpperCase() } -> context.getString(R.string.validation_password_uppercase)
+            !password.any { it.isLowerCase() } -> context.getString(R.string.validation_password_lowercase)
+            !password.any { it.isDigit() } -> context.getString(R.string.validation_password_number)
+            !password.any { !it.isLetterOrDigit() } -> context.getString(R.string.validation_password_special)
             else -> null
         }
     }
 
     private fun validateUsername(username: String): String? {
         return when {
-            username.isEmpty() -> "Username é obrigatório"
-            username.length < 3 -> "Username deve ter pelo menos 3 caracteres"
-            !username.matches(Regex("^[a-zA-Z0-9_]+$")) -> "Username pode conter apenas letras, números e underscore"
+            username.isEmpty() -> context.getString(R.string.validation_username_required)
+            username.length < 3 -> context.getString(R.string.validation_username_min_length)
+            !username.matches(Regex("^[a-zA-Z0-9_]+$")) -> context.getString(R.string.validation_username_invalid_chars)
             else -> null
         }
     }
 
     private fun validateName(name: String, fieldName: String): String? {
         return when {
-            name.isEmpty() -> "$fieldName é obrigatório"
-            name.length < 2 -> "$fieldName deve ter pelo menos 2 caracteres"
+            name.isEmpty() -> context.getString(R.string.validation_name_required, fieldName)
+            name.length < 2 -> context.getString(R.string.validation_name_min_length, fieldName)
             else -> null
         }
     }
@@ -266,16 +270,10 @@ class AuthViewModel @Inject constructor(
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = error.message ?: "Erro ao criar conta"
+                        errorMessage = error.message ?: context.getString(R.string.register_error_default)
                     )
                 }
             )
-        }
-    }
-
-    fun logout() {
-        viewModelScope.launch {
-            authRepository.logout()
         }
     }
 

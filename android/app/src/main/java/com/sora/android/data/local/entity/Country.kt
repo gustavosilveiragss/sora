@@ -16,7 +16,7 @@ data class Country(
 
 @Entity(tableName = "country_collection")
 data class CountryCollection(
-    @PrimaryKey val id: String, // userId_countryCode
+    @PrimaryKey val id: String,
     val userId: Long,
     val countryId: Long,
     val countryCode: String,

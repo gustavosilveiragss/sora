@@ -65,23 +65,31 @@ class LikeControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void likePost_AlreadyLiked() throws Exception {
+    void likePost_AlreadyLiked_IsIdempotent() throws Exception {
         mockMvc.perform(post("/api/posts/" + testPost.getId() + "/like")
                 .header("Authorization", "Bearer " + testUser2Token))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.likesCount").value(1));
 
         mockMvc.perform(post("/api/posts/" + testPost.getId() + "/like")
                 .header("Authorization", "Bearer " + testUser2Token))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.messageKey").exists());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.likesCount").value(1))
+                .andExpect(jsonPath("$.like").exists());
     }
 
     @Test
-    void likePost_OwnPost() throws Exception {
+    void likePost_OwnPost_IsAllowed() throws Exception {
         mockMvc.perform(post("/api/posts/" + testPost.getId() + "/like")
                 .header("Authorization", "Bearer " + testUser1Token))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.messageKey").exists());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.likesCount").value(1))
+                .andExpect(jsonPath("$.like.user.username").value("testuser1"));
+
+        mockMvc.perform(get("/api/posts/" + testPost.getId())
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isLikedByCurrentUser").value(true));
     }
 
     @Test
@@ -111,11 +119,16 @@ class LikeControllerIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
-    void unlikePost_NotLiked() throws Exception {
+    void unlikePost_NotLiked_IsIdempotent() throws Exception {
         mockMvc.perform(delete("/api/posts/" + testPost.getId() + "/like")
                 .header("Authorization", "Bearer " + testUser2Token))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.messageKey").exists());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").exists());
+
+        mockMvc.perform(get("/api/posts/" + testPost.getId())
+                .header("Authorization", "Bearer " + testUser2Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isLikedByCurrentUser").value(false));
     }
 
     @Test

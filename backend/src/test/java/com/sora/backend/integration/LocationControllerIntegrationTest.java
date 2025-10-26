@@ -121,8 +121,8 @@ class LocationControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/json"))
                 .andExpect(jsonPath("$.displayName").exists())
-                .andExpect(jsonPath("$.latitude").value(-23.5503898))
-                .andExpect(jsonPath("$.longitude").value(-46.633081))
+                .andExpect(jsonPath("$.latitude").value(-23.5504428))
+                .andExpect(jsonPath("$.longitude").value(-46.6334463))
                 .andExpect(jsonPath("$.countryCode").exists())
                 .andExpect(jsonPath("$.countryName").exists());
     }

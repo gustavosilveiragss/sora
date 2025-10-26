@@ -63,7 +63,6 @@ fun SoraScaffoldWithErrorHandling(
         content = content
     )
 
-    // Global Error Dialog
     ErrorDialog(
         errorState = errorState,
         onDismiss = errorManager::hideError

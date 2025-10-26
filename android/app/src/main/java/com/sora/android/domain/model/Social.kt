@@ -1,5 +1,6 @@
 package com.sora.android.domain.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -7,6 +8,7 @@ data class FollowModel(
     val id: Long,
     val follower: UserModel,
     val following: UserModel,
+    @SerialName("followedAt")
     val createdAt: String
 )
 
@@ -26,6 +28,7 @@ data class CommentModel(
     val parentComment: CommentModel? = null,
     val content: String,
     val repliesCount: Int = 0,
+    val isLikedByCurrentUser: Boolean = false,
     val createdAt: String,
     val updatedAt: String? = null
 )

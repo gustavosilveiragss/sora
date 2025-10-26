@@ -9,6 +9,7 @@ public record CommentResponseDto(
     String content,
     Integer repliesCount,
     List<CommentResponseDto> replies,
+    Boolean isLikedByCurrentUser,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {}

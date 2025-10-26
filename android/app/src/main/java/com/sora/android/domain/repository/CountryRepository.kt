@@ -1,6 +1,5 @@
 package com.sora.android.domain.repository
 
-import androidx.paging.PagingData
 import com.sora.android.data.remote.dto.CountryCollectionsResponse
 import com.sora.android.data.remote.dto.CountryPostsResponse
 import com.sora.android.domain.model.*

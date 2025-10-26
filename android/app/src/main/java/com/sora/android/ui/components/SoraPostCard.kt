@@ -1,7 +1,8 @@
 package com.sora.android.ui.components
 
-import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import com.sora.android.R
 import androidx.compose.foundation.layout.*
@@ -13,16 +14,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.sora.android.ui.theme.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.sora.android.core.util.formatTimeAgo
+import com.sora.android.ui.viewmodel.CommentViewModel
 
 @Composable
 fun SoraPostCard(
+    postId: Long,
     username: String,
     profileImageUrl: String?,
     postImageUrls: List<String>,
@@ -30,14 +34,17 @@ fun SoraPostCard(
     likesCount: Int,
     commentsCount: Int,
     isLiked: Boolean,
-    timeAgo: String,
+    timestamp: String,
+    cityName: String? = null,
+    isOwnPost: Boolean = false,
+    currentUserId: Long? = null,
     onProfileClick: () -> Unit = {},
     onLikeClick: () -> Unit = {},
     onCommentClick: () -> Unit = {},
-    onShareClick: () -> Unit = {},
-    onSaveClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val timeAgo = formatTimeAgo(timestamp)
+    var showComments by remember { mutableStateOf(false) }
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -50,36 +57,83 @@ fun SoraPostCard(
             PostHeader(
                 username = username,
                 profileImageUrl = profileImageUrl,
+                cityName = cityName,
                 timeAgo = timeAgo,
+                isOwnPost = isOwnPost,
                 onProfileClick = onProfileClick
             )
 
             if (postImageUrls.isNotEmpty()) {
-                AsyncImage(
-                    model = postImageUrls.first(),
-                    contentDescription = stringResource(R.string.post_image),
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(1f),
-                    contentScale = ContentScale.Crop
-                )
+                        .aspectRatio(1f)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = postImageUrls.first(),
+                        contentDescription = stringResource(R.string.post_image),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(android.R.drawable.ic_menu_report_image),
+                        placeholder = painterResource(android.R.drawable.ic_menu_gallery)
+                    )
+                }
             }
 
             PostActions(
                 isLiked = isLiked,
+                likesCount = likesCount,
+                commentsCount = commentsCount,
                 onLikeClick = onLikeClick,
-                onCommentClick = onCommentClick,
-                onShareClick = onShareClick,
-                onSaveClick = onSaveClick
+                onCommentClick = {
+                    showComments = true
+                    onCommentClick()
+                }
             )
 
             PostContent(
-                likesCount = likesCount,
-                username = username,
-                caption = caption,
-                commentsCount = commentsCount,
-                timeAgo = timeAgo,
-                onViewComments = onCommentClick
+                caption = caption
+            )
+        }
+
+        if (showComments) {
+            val viewModel: CommentViewModel = hiltViewModel()
+
+            LaunchedEffect(postId) {
+                currentUserId?.let { viewModel.setCurrentUserId(it) }
+                viewModel.loadComments(postId)
+            }
+
+            val comments by viewModel.comments.collectAsState()
+            val isLoading by viewModel.isLoading.collectAsState()
+            val isPosting by viewModel.isPosting.collectAsState()
+
+            CommentBottomSheet(
+                comments = comments,
+                currentUserId = currentUserId,
+                isLoading = isLoading,
+                isPosting = isPosting,
+                onDismiss = { showComments = false },
+                onPostComment = { content ->
+                    viewModel.postComment(postId, content)
+                },
+                onReplyComment = { commentId, targetUsername, content ->
+                    viewModel.replyToComment(commentId, postId, targetUsername, content)
+                },
+                onDeleteComment = { commentId ->
+                    viewModel.deleteComment(commentId, postId)
+                },
+                onToggleReplies = { commentId ->
+                    viewModel.toggleReplies(commentId, postId)
+                },
+                onLikeComment = { commentId ->
+                    viewModel.likeComment(commentId, postId)
+                },
+                onUnlikeComment = { commentId ->
+                    viewModel.unlikeComment(commentId, postId)
+                }
             )
         }
     }
@@ -89,23 +143,24 @@ fun SoraPostCard(
 private fun PostHeader(
     username: String,
     profileImageUrl: String?,
+    cityName: String?,
     timeAgo: String,
+    isOwnPost: Boolean,
     onProfileClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onProfileClick() }
-            .padding(12.dp),
+            .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
             model = profileImageUrl,
             contentDescription = stringResource(R.string.profile_picture),
             modifier = Modifier
-                .size(32.dp)
-                .clip(CircleShape)
-                .border(1.dp, SoraGrayLight, CircleShape),
+                .size(36.dp)
+                .clip(CircleShape),
             contentScale = ContentScale.Crop
         )
 
@@ -114,24 +169,47 @@ private fun PostHeader(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = username,
-                style = MaterialTheme.typography.bodyMedium.copy(
+                style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
                 color = SoraTextPrimary
             )
-            Text(
-                text = timeAgo,
-                style = MaterialTheme.typography.bodySmall,
-                color = SoraGrayLight
-            )
+
+            if (!cityName.isNullOrBlank()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = SoraIcons.MapPin,
+                        contentDescription = null,
+                        modifier = Modifier.size(12.dp),
+                        tint = SoraTextSecondary
+                    )
+                    Text(
+                        text = "$cityName • $timeAgo",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SoraTextSecondary
+                    )
+                }
+            } else {
+                Text(
+                    text = timeAgo,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SoraTextSecondary
+                )
+            }
         }
 
-        IconButton(onClick = { /* More options */ }) {
-            Icon(
-                imageVector = SoraIcons.MoreVertical,
-                contentDescription = stringResource(R.string.more_options),
-                tint = SoraTextSecondary
-            )
+        if (isOwnPost) {
+            IconButton(onClick = { }) {
+                Icon(
+                    imageVector = SoraIcons.MoreHorizontal,
+                    contentDescription = stringResource(R.string.more_options),
+                    tint = SoraTextSecondary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
@@ -139,49 +217,59 @@ private fun PostHeader(
 @Composable
 private fun PostActions(
     isLiked: Boolean,
+    likesCount: Int,
+    commentsCount: Int,
     onLikeClick: () -> Unit,
-    onCommentClick: () -> Unit,
-    onShareClick: () -> Unit,
-    onSaveClick: () -> Unit
+    onCommentClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row {
-            IconButton(onClick = onLikeClick) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            IconButton(
+                onClick = onLikeClick,
+                modifier = Modifier.size(32.dp)
+            ) {
                 Icon(
-                    imageVector = SoraIcons.Heart,
+                    imageVector = if (isLiked) SoraIcons.HeartFilled else SoraIcons.Heart,
                     contentDescription = if (isLiked) stringResource(R.string.unlike) else stringResource(R.string.like),
-                    tint = if (isLiked) SoraRed else SoraTextPrimary
+                    tint = if (isLiked) SoraRed else SoraTextPrimary,
+                    modifier = Modifier.size(22.dp)
                 )
             }
+            Text(
+                text = likesCount.toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = SoraTextPrimary
+            )
+        }
 
-            IconButton(onClick = onCommentClick) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            IconButton(
+                onClick = onCommentClick,
+                modifier = Modifier.size(32.dp)
+            ) {
                 Icon(
                     imageVector = SoraIcons.MessageCircle,
                     contentDescription = stringResource(R.string.comment),
-                    tint = SoraTextPrimary
+                    tint = SoraTextPrimary,
+                    modifier = Modifier.size(22.dp)
                 )
             }
-
-            IconButton(onClick = onShareClick) {
-                Icon(
-                    imageVector = SoraIcons.Send,
-                    contentDescription = stringResource(R.string.share),
-                    tint = SoraTextPrimary
-                )
-            }
-        }
-
-        IconButton(onClick = onSaveClick) {
-            Icon(
-                imageVector = SoraIcons.Bookmark,
-                contentDescription = stringResource(R.string.save),
-                tint = SoraTextSecondary
+            Text(
+                text = commentsCount.toString(),
+                style = MaterialTheme.typography.bodyMedium,
+                color = SoraTextPrimary
             )
         }
     }
@@ -189,59 +277,20 @@ private fun PostActions(
 
 @Composable
 private fun PostContent(
-    likesCount: Int,
-    username: String,
-    caption: String?,
-    commentsCount: Int,
-    timeAgo: String,
-    onViewComments: () -> Unit
+    caption: String?
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
-        if (likesCount > 0) {
-            Text(
-                text = if (likesCount == 1)
-                    stringResource(R.string.like_single, likesCount)
-                else
-                    stringResource(R.string.likes_count, likesCount),
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold
-                ),
-                color = SoraTextPrimary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-        }
-
         if (!caption.isNullOrBlank()) {
-            Row {
-                Text(
-                    text = username,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = SoraTextPrimary
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = caption,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SoraTextPrimary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-        }
-
-        if (commentsCount > 0) {
             Text(
-                text = stringResource(R.string.view_all_comments, commentsCount),
+                text = caption,
                 style = MaterialTheme.typography.bodyMedium,
-                color = SoraTextSecondary,
-                modifier = Modifier.clickable { onViewComments() }
+                color = SoraTextPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         } else {
             Spacer(modifier = Modifier.height(8.dp))
         }

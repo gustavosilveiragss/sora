@@ -20,7 +20,8 @@ data class CountryCollectionModel(
     val firstVisitDate: String? = null,
     val lastVisitDate: String? = null,
     val visitCount: Int = 0,
-    val postsCount: Int = 0
+    val postsCount: Int = 0,
+    val latestPostImageUrl: String? = null
 )
 
 @Serializable
@@ -28,5 +29,6 @@ data class CountryVisitInfoModel(
     val firstVisitDate: String? = null,
     val lastVisitDate: String? = null,
     val visitCount: Int = 0,
-    val postsCount: Int = 0
+    val totalPostsCount: Int = 0,
+    val citiesVisited: List<String>? = null
 )

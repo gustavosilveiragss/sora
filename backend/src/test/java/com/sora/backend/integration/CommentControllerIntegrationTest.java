@@ -280,4 +280,132 @@ class CommentControllerIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/posts/" + testPost.getId() + "/comments"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void likeComment_Success() throws Exception {
+        mockMvc.perform(post("/api/comments/" + testComment.getId() + "/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").exists());
+
+        mockMvc.perform(get("/api/comments/" + testComment.getId() + "/likes/count")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(1));
+    }
+
+    @Test
+    void likeComment_AlreadyLiked() throws Exception {
+        mockMvc.perform(post("/api/comments/" + testComment.getId() + "/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/comments/" + testComment.getId() + "/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/comments/" + testComment.getId() + "/likes/count")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(1));
+    }
+
+    @Test
+    void likeComment_CommentNotFound() throws Exception {
+        mockMvc.perform(post("/api/comments/999999/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void likeComment_Unauthorized() throws Exception {
+        mockMvc.perform(post("/api/comments/" + testComment.getId() + "/like"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void unlikeComment_Success() throws Exception {
+        mockMvc.perform(post("/api/comments/" + testComment.getId() + "/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/api/comments/" + testComment.getId() + "/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").exists());
+
+        mockMvc.perform(get("/api/comments/" + testComment.getId() + "/likes/count")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(0));
+    }
+
+    @Test
+    void unlikeComment_NotLiked() throws Exception {
+        mockMvc.perform(delete("/api/comments/" + testComment.getId() + "/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/comments/" + testComment.getId() + "/likes/count")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(0));
+    }
+
+    @Test
+    void unlikeComment_CommentNotFound() throws Exception {
+        mockMvc.perform(delete("/api/comments/999999/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void unlikeComment_Unauthorized() throws Exception {
+        mockMvc.perform(delete("/api/comments/" + testComment.getId() + "/like"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getCommentLikesCount_Success() throws Exception {
+        mockMvc.perform(post("/api/comments/" + testComment.getId() + "/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/comments/" + testComment.getId() + "/like")
+                .header("Authorization", "Bearer " + testUser2Token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/comments/" + testComment.getId() + "/likes/count")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(2));
+    }
+
+    @Test
+    void getCommentLikesCount_CommentNotFound() throws Exception {
+        mockMvc.perform(get("/api/comments/999999/likes/count")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getPostComments_WithLikeStatus() throws Exception {
+        mockMvc.perform(post("/api/comments/" + testComment.getId() + "/like")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/posts/" + testPost.getId() + "/comments")
+                .param("page", "0")
+                .param("size", "20")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].isLikedByCurrentUser").value(true));
+
+        mockMvc.perform(get("/api/posts/" + testPost.getId() + "/comments")
+                .param("page", "0")
+                .param("size", "20")
+                .header("Authorization", "Bearer " + testUser2Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].isLikedByCurrentUser").value(false));
+    }
 }

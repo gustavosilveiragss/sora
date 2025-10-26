@@ -10,7 +10,7 @@ data class PostModel(
     val collection: CollectionModel,
     val cityName: String,
     val caption: String? = null,
-    val mediaUrls: List<String> = emptyList(),
+    val media: List<MediaModel> = emptyList(),
     val likesCount: Int = 0,
     val commentsCount: Int = 0,
     val isLikedByCurrentUser: Boolean = false,
@@ -18,7 +18,10 @@ data class PostModel(
     val updatedAt: String? = null,
     val visibilityType: VisibilityType = VisibilityType.PERSONAL,
     val sharedPostGroupId: String? = null
-)
+) {
+    val mediaUrls: List<String>
+        get() = media.map { it.cloudinaryUrl }
+}
 
 @Serializable
 data class PostCreateRequest(

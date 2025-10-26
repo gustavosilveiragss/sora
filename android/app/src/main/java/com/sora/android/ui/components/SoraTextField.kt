@@ -21,13 +21,18 @@ import com.sora.android.ui.theme.*
 fun SoraTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    placeholder: String,
     modifier: Modifier = Modifier,
+    label: String? = null,
+    placeholder: String? = null,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
     isPassword: Boolean = false,
     isError: Boolean = false,
     errorMessage: String? = null,
     enabled: Boolean = true,
     singleLine: Boolean = true,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
+    maxLength: Int? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
     onImeAction: (() -> Unit)? = null
@@ -35,19 +40,25 @@ fun SoraTextField(
     Column(modifier = modifier) {
         OutlinedTextField(
             value = value,
-            onValueChange = onValueChange,
-            placeholder = {
+            onValueChange = { newValue ->
+                if (maxLength == null || newValue.length <= maxLength) {
+                    onValueChange(newValue)
+                }
+            },
+            label = label?.let { { Text(it) } },
+            placeholder = placeholder?.let { {
                 Text(
-                    text = placeholder,
+                    text = it,
                     style = MaterialTheme.typography.bodyMedium,
                     color = SoraTextTertiary
                 )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp),
+            } },
+            leadingIcon = leadingIcon,
+            trailingIcon = trailingIcon,
+            modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             singleLine = singleLine,
+            maxLines = maxLines,
             isError = isError,
             visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = KeyboardOptions(
@@ -72,13 +83,30 @@ fun SoraTextField(
             textStyle = MaterialTheme.typography.bodyMedium
         )
 
-        if (isError && errorMessage != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = errorMessage,
-                style = MaterialTheme.typography.bodySmall,
-                color = SoraError
-            )
+        // Error message and character counter
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            if (isError && errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SoraError
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            if (maxLength != null) {
+                Text(
+                    text = "${value.length}/$maxLength",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SoraTextTertiary
+                )
+            }
         }
     }
 }

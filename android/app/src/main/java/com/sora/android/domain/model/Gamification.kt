@@ -7,8 +7,7 @@ data class UserStatsModel(
     val user: UserModel,
     val travelStats: TravelStatsModel,
     val rankings: RankingsModel? = null,
-    val achievements: List<AchievementModel> = emptyList(),
-    val continentStats: List<ContinentStatsModel> = emptyList()
+    val achievements: List<AchievementModel> = emptyList()
 )
 
 @Serializable
@@ -18,13 +17,29 @@ data class TravelStatsModel(
     val totalPostsCount: Int = 0,
     val totalLikesReceived: Int = 0,
     val totalCommentsReceived: Int = 0,
-    val totalFollowers: Int = 0
+    val totalFollowers: Int = 0,
+    val totalFollowing: Int = 0,
+    val rankings: RankingsModel? = null,
+    val recentDestinations: List<RecentDestinationModel> = emptyList()
 )
 
 @Serializable
 data class RankingsModel(
-    val countriesRankAmongFollowed: RankingModel? = null,
-    val postsRankAmongFollowed: RankingModel? = null
+    val countriesRankAmongMutuals: RankingModel? = null,
+    val postsRankAmongMutuals: RankingModel? = null
+)
+
+@Serializable
+data class RecentDestinationModel(
+    val countryId: Long? = null,
+    val countryCode: String = "",
+    val countryName: String = "",
+    val countryNameKey: String = "",
+    val cityName: String? = null,
+    val firstVisitDate: String? = null,
+    val lastVisitDate: String? = null,
+    val visitCount: Int = 0,
+    val postsCount: Int = 0
 )
 
 @Serializable
@@ -44,20 +59,12 @@ data class AchievementModel(
     val unlockedAt: String
 )
 
-@Serializable
-data class ContinentStatsModel(
-    val continentCode: String,
-    val continentNameKey: String,
-    val countriesVisited: Int,
-    val totalCountries: Int,
-    val completionPercentage: Double
-)
 
 @Serializable
 data class LeaderboardModel(
     val metric: String,
     val timeframe: String,
-    val leaderboard: List<LeaderboardEntryModel>,
+    val entries: List<LeaderboardEntryModel>,
     val currentUserPosition: Int? = null
 )
 
@@ -65,5 +72,19 @@ data class LeaderboardModel(
 data class LeaderboardEntryModel(
     val position: Int,
     val user: UserModel,
-    val score: Int
+    val score: Int,
+    val scoreName: String,
+    val isCurrentUser: Boolean
+)
+
+@Serializable
+data class UserRankingsModel(
+    val userId: Long,
+    val countriesRankPosition: Int?,
+    val postsRankPosition: Int?,
+    val likesRankPosition: Int?,
+    val totalUsers: Int,
+    val percentileCountries: Double?,
+    val percentilePosts: Double?,
+    val percentileLikes: Double?
 )

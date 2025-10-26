@@ -43,6 +43,43 @@ fun SoraTopBar(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SoraTopBar(
+    title: String,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    actions: (@Composable RowScope.() -> Unit)? = null
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = SoraTextPrimary
+            )
+        },
+        modifier = modifier,
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = SoraIcons.ArrowLeft,
+                    contentDescription = stringResource(R.string.back),
+                    tint = SoraTextPrimary
+                )
+            }
+        },
+        actions = actions ?: {},
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = SoraSurface,
+            titleContentColor = SoraTextPrimary,
+            actionIconContentColor = SoraTextPrimary
+        )
+    )
+}
+
 @Composable
 fun SoraActionIcon(
     icon: ImageVector,

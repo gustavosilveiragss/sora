@@ -5,6 +5,8 @@ import androidx.compose.ui.graphics.Color
 val SoraBlack = Color(0xFF000000)
 val SoraWhite = Color(0xFFFFFFFF)
 val SoraBlue = Color(0xFF0095F6)
+val SoraBlueDark = Color(0xFF0066CC)
+val SoraPrimary = Color(0xFF0095F6)
 val SoraRed = Color(0xFFED4956)
 
 val SoraBackground = Color(0xFF000000)
@@ -22,6 +24,7 @@ val SoraLinkBlue = Color(0xFF00376B)
 val SoraSuccess = Color(0xFF00C851)
 val SoraWarning = Color(0xFFFF8A00)
 val SoraError = Color(0xFFED4956)
+val DangerRed = Color(0xFFED4956)
 
 val SoraGradientStart = Color(0xFF833AB4)
 val SoraGradientMiddle = Color(0xFFE1306C)

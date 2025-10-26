@@ -1,5 +1,7 @@
 package com.sora.android.data.repository
 
+import android.content.Context
+import com.sora.android.data.local.SoraDatabase
 import com.sora.android.data.local.TokenManager
 import com.sora.android.data.local.dao.UserDao
 import com.sora.android.data.local.entity.User
@@ -7,6 +9,7 @@ import com.sora.android.data.remote.ApiService
 import com.sora.android.data.remote.util.NetworkUtils
 import com.sora.android.domain.model.*
 import com.sora.android.domain.repository.AuthRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -17,7 +20,8 @@ import javax.inject.Singleton
 class AuthRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val tokenManager: TokenManager,
-    private val userDao: UserDao
+    private val userDao: UserDao,
+    @ApplicationContext private val context: Context
 ) : AuthRepository {
 
     override suspend fun register(request: RegisterRequest): Result<AuthResponseModel> {
@@ -37,7 +41,7 @@ class AuthRepositoryImpl @Inject constructor(
 
                 Result.success(authResponse)
             } else {
-                val errorMessage = NetworkUtils.parseErrorMessage(response)
+                val errorMessage = NetworkUtils.parseErrorMessage(response, context)
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
@@ -62,7 +66,7 @@ class AuthRepositoryImpl @Inject constructor(
 
                 Result.success(authResponse)
             } else {
-                val errorMessage = NetworkUtils.parseErrorMessage(response)
+                val errorMessage = NetworkUtils.parseErrorMessage(response, context)
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
@@ -82,7 +86,7 @@ class AuthRepositoryImpl @Inject constructor(
                 Result.success(tokenResponse)
             } else {
                 tokenManager.clearTokens()
-                val errorMessage = NetworkUtils.parseErrorMessage(response)
+                val errorMessage = NetworkUtils.parseErrorMessage(response, context)
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {

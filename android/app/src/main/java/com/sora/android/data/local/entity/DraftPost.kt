@@ -8,7 +8,7 @@ import com.sora.android.data.local.converter.StringListConverter
 @Entity(tableName = "draft_post")
 @TypeConverters(StringListConverter::class)
 data class DraftPost(
-    @PrimaryKey val localId: String, // UUID
+    @PrimaryKey val localId: String,
     val countryCode: String,
     val collectionCode: String,
     val cityName: String,

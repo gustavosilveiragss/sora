@@ -135,6 +135,9 @@ public class UserTravelService {
         
         int visitCount = cities.size();
 
+        // Get the latest post image URL for this country
+        String latestPostImageUrl = postRepository.findLatestPostImageUrlByUserAndCountry(userId, country.getId());
+
         return new CountryCollectionResponseDto(
                 country.getId(),
                 country.getCode(),
@@ -147,7 +150,8 @@ public class UserTravelService {
                 postsCount,
                 cities,
                 collaborators,
-                !activePermissions.isEmpty()
+                !activePermissions.isEmpty(),
+                latestPostImageUrl
         );
     }
 

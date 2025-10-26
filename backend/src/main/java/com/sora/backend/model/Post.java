@@ -60,7 +60,7 @@ public class Post extends BaseEntity {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Comment> comments;
-    
+
     public Post() {}
     
     public Post(UserAccount author, UserAccount profileOwner, Country country, Collection collection, String cityName, String caption) {
