@@ -59,7 +59,11 @@ fun MainNavigationScreen(
             }
 
             composable(SoraScreens.Explore.route) {
-                PlaceholderScreen(title = stringResource(R.string.explore))
+                ExploreScreen(
+                    onNavigateToProfile = { userId ->
+                        navController.navigate(SoraScreens.UserProfile.createRoute(userId))
+                    }
+                )
             }
 
             composable(SoraScreens.CreatePost.route) {

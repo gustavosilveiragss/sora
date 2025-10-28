@@ -152,8 +152,6 @@
     <string name="posts_count">%d posts</string>
     <string name="countries_of_total" formatted="false">%d of %d countries</string>
     <string name="visit_date_format" formatted="false">%s • %s</string>
-
-    <!-- Error Messages -->
     <string name="error_upload_image">Error uploading image</string>
     <string name="error_empty_response">Empty response</string>
     <string name="error_parent_comment_not_found">Parent comment not found</string>
@@ -194,10 +192,12 @@
     <string name="search_followers">Search followers</string>
     <string name="search_following">Search following</string>
     <string name="clear_search">Clear search</string>
+    <string name="search_users_hint">Search people</string>
+    <string name="search_users_to_start">Search users to start</string>
+    <string name="min_search_length">Type at least 2 characters</string>
+    <string name="search_error">Error searching users</string>
     <string name="create_post">Create Post</string>
     <string name="logout">Logout</string>
-
-    <!-- Country Translations (English) -->
     <string name="country_algeria">Algeria</string>
     <string name="country_angola">Angola</string>
     <string name="country_benin">Benin</string>

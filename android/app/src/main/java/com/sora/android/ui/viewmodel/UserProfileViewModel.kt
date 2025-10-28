@@ -3,6 +3,7 @@ package com.sora.android.ui.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sora.android.data.local.TokenManager
 import com.sora.android.data.remote.ApiService
 import com.sora.android.data.remote.dto.CountryCollectionsResponse
 import com.sora.android.domain.model.GlobeDataModel
@@ -23,10 +24,14 @@ class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val countryRepository: CountryRepository,
     private val apiService: ApiService,
+    private val tokenManager: TokenManager,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val userId: Long = savedStateHandle.get<Long>("userId") ?: 0L
+
+    private val _currentUserId = MutableStateFlow<Long?>(null)
+    val currentUserId: StateFlow<Long?> = _currentUserId.asStateFlow()
 
     private val _userProfile = MutableStateFlow<UserProfileModel?>(null)
     val userProfile: StateFlow<UserProfileModel?> = _userProfile.asStateFlow()
@@ -55,7 +60,14 @@ class UserProfileViewModel @Inject constructor(
     private var hasLocalFollowState = false
 
     init {
+        loadCurrentUserId()
         loadProfile()
+    }
+
+    private fun loadCurrentUserId() {
+        viewModelScope.launch {
+            _currentUserId.value = tokenManager.getUserId()
+        }
     }
 
     private fun loadProfile() {

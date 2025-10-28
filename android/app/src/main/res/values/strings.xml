@@ -65,15 +65,11 @@
     <string name="months">%d meses</string>
     <string name="one_year">1 ano</string>
     <string name="years">%d anos</string>
-
-    <!-- Password Requirements -->
     <string name="password_req_min_length">Pelo menos 6 caracteres</string>
     <string name="password_req_uppercase">Uma letra maiúscula</string>
     <string name="password_req_lowercase">Uma letra minúscula</string>
     <string name="password_req_number">Um número</string>
     <string name="password_req_special">Um caractere especial</string>
-
-    <!-- Validation Messages -->
     <string name="validation_email_required">Email é obrigatório</string>
     <string name="validation_email_invalid">Email inválido</string>
     <string name="validation_password_required">Senha é obrigatória</string>
@@ -90,8 +86,6 @@
     <string name="validation_name_min_length">%s deve ter pelo menos 2 caracteres</string>
     <string name="validation_first_name">Nome</string>
     <string name="validation_last_name">Sobrenome</string>
-
-    <!-- Edit Profile Validation -->
     <string name="validation_first_name_required">Nome é obrigatório</string>
     <string name="validation_first_name_min_length">Nome deve ter pelo menos 2 caracteres</string>
     <string name="validation_last_name_required">Sobrenome é obrigatório</string>
@@ -100,17 +94,11 @@
     <string name="validation_username_min_length_edit">Username deve ter pelo menos 3 caracteres</string>
     <string name="validation_username_invalid_chars_edit">Username pode conter apenas letras, números e underscore</string>
     <string name="validation_bio_max_length">Bio deve ter no máximo 500 caracteres</string>
-
-    <!-- Register Form -->
     <string name="register_error_default">Erro ao criar conta</string>
-
-    <!-- Bottom Navigation -->
     <string name="nav_globe">Globo</string>
     <string name="nav_explore">Explorar</string>
     <string name="nav_create">Criar</string>
     <string name="nav_profile">Perfil</string>
-
-    <!-- Profile -->
     <string name="edit_profile">Editar Perfil</string>
     <string name="travel_statistics">Estatísticas de Viagem</string>
     <string name="followers">Seguidores</string>
@@ -143,8 +131,6 @@
     <string name="zero">0</string>
     <string name="personal_information">Informações Pessoais</string>
     <string name="bio_placeholder">Conte um pouco sobre você e suas viagens...</string>
-
-    <!-- Travel Stats -->
     <string name="travel_stats">Estatísticas de Viagem</string>
     <string name="travel_overview">Resumo de Viagens</string>
     <string name="rankings_among_mutuals">Rankings Entre Mútuos</string>
@@ -159,8 +145,6 @@
     <string name="posts_count">%d posts</string>
     <string name="countries_of_total" formatted="false">%d de %d países</string>
     <string name="visit_date_format" formatted="false">%s • %s</string>
-
-    <!-- Error Messages -->
     <string name="error_upload_image">Erro ao enviar imagem</string>
     <string name="error_empty_response">Resposta vazia</string>
     <string name="error_parent_comment_not_found">Comentário pai não encontrado</string>
@@ -177,8 +161,6 @@
     <string name="back">Voltar</string>
     <string name="error_loading_stats">Erro ao carregar estatísticas</string>
     <string name="invalid_date">Data inválida</string>
-
-    <!-- Common Actions -->
     <string name="follow">Seguir</string>
     <string name="unfollow">Deixar de Seguir</string>
     <string name="following_button">Seguindo</string>
@@ -187,16 +169,12 @@
     <string name="revoke">Revogar</string>
     <string name="accept">Aceitar</string>
     <string name="decline">Recusar</string>
-
-    <!-- Empty States -->
     <string name="no_followers">Você ainda não tem seguidores</string>
     <string name="no_following">Você não está seguindo ninguém</string>
     <string name="no_permissions">Nenhuma permissão ativa</string>
     <string name="empty_travel_stats">Comece a viajar para ver suas estatísticas</string>
     <string name="no_results_found">Nenhum resultado encontrado</string>
     <string name="no_leaderboard_data">Nenhum dado de ranking disponível</string>
-
-    <!-- Placeholders -->
     <string name="main_globe">Globo Principal</string>
     <string name="explore">Explorar</string>
     <string name="create_post">Criar Post</string>
@@ -204,9 +182,11 @@
     <string name="search_followers">Buscar seguidores</string>
     <string name="search_following">Buscar quem você segue</string>
     <string name="clear_search">Limpar busca</string>
+    <string name="search_users_hint">Buscar pessoas</string>
+    <string name="search_users_to_start">Busque usuários para começar</string>
+    <string name="min_search_length">Digite pelo menos 2 caracteres</string>
+    <string name="search_error">Erro ao buscar usuários</string>
     <string name="logout">Sair</string>
-
-    <!-- Country Translations (Portuguese) -->
     <string name="country_algeria">Argélia</string>
     <string name="country_angola">Angola</string>
     <string name="country_benin">Benin</string>

@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -24,14 +25,15 @@ fun UserListItem(
     modifier: Modifier = Modifier,
     showFollowButton: Boolean = false,
     isFollowing: Boolean = false,
-    onFollowClick: (() -> Unit)? = null
+    onFollowClick: (() -> Unit)? = null,
+    currentUserId: Long? = null
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Row(
@@ -76,7 +78,7 @@ fun UserListItem(
                 )
             }
 
-            if (showFollowButton && onFollowClick != null) {
+            if (showFollowButton && onFollowClick != null && currentUserId != user.id) {
                 OutlinedButton(
                     onClick = onFollowClick,
                     colors = ButtonDefaults.outlinedButtonColors(
@@ -85,7 +87,7 @@ fun UserListItem(
                     )
                 ) {
                     Text(
-                        text = if (isFollowing) "Seguindo" else "Seguir"
+                        text = if (isFollowing) stringResource(R.string.following_button) else stringResource(R.string.follow)
                     )
                 }
             }
