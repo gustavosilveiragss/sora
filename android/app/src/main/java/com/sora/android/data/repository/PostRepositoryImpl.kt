@@ -138,16 +138,21 @@ class PostRepositoryImpl @Inject constructor(
 
     override suspend fun getUserPosts(userId: Long, page: Int, size: Int): Flow<PagingData<PostModel>> {
         return flow {
+            android.util.Log.d("PostRepository", "getUserPosts called for userId: $userId")
             val cachedPosts = postDao.getRecentPosts(size).filter { it.authorId == userId }
 
             if (cachedPosts.isNotEmpty()) {
+                android.util.Log.d("PostRepository", "Emitting ${cachedPosts.size} cached posts")
                 emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
             }
 
             try {
+                android.util.Log.d("PostRepository", "Fetching country collections from API...")
                 val countriesResponse = apiService.getUserCountryCollections(userId)
+                android.util.Log.d("PostRepository", "Country collections response: ${countriesResponse.code()}")
                 if (countriesResponse.isSuccessful) {
                     countriesResponse.body()?.let { countryCollections ->
+                        android.util.Log.d("PostRepository", "User has ${countryCollections.countries.size} countries")
                         val allPosts = mutableListOf<PostModel>()
 
                         countryCollections.countries.forEach { country ->
@@ -167,15 +172,19 @@ class PostRepositoryImpl @Inject constructor(
                         }
 
                         if (allPosts.isNotEmpty()) {
+                            android.util.Log.d("PostRepository", "Emitting ${allPosts.size} posts from API")
                             emit(PagingData.from(allPosts))
                         } else if (cachedPosts.isEmpty()) {
+                            android.util.Log.d("PostRepository", "No posts found, emitting empty")
                             emit(PagingData.empty())
                         }
                     }
                 } else if (cachedPosts.isEmpty()) {
+                    android.util.Log.w("PostRepository", "API error and no cache, emitting empty")
                     emit(PagingData.empty())
                 }
             } catch (e: Exception) {
+                android.util.Log.e("PostRepository", "Error loading posts", e)
                 if (cachedPosts.isEmpty()) {
                     emit(PagingData.empty())
                 }

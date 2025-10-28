@@ -23,7 +23,6 @@ import com.sora.android.ui.navigation.SoraScreens
 import com.sora.android.ui.screen.profile.EditProfileScreen
 import com.sora.android.ui.screen.profile.ProfileScreen
 import com.sora.android.ui.screen.profile.TravelStatsScreen
-import com.sora.android.ui.screen.profile.UserProfileScreen
 import com.sora.android.ui.screen.settings.SettingsScreen
 
 @Composable
@@ -88,6 +87,9 @@ fun MainNavigationScreen(
                     },
                     onNavigateToCountryCollection = { userId, countryCode ->
                         navController.navigate(SoraScreens.CountryCollection.createRoute(userId, countryCode))
+                    },
+                    onNavigateToUserProfile = { userId ->
+                        navController.navigate(SoraScreens.UserProfile.createRoute(userId))
                     }
                 )
             }
@@ -137,16 +139,22 @@ fun MainNavigationScreen(
                 route = SoraScreens.UserProfile.route,
                 arguments = listOf(navArgument("userId") { type = NavType.LongType })
             ) {
-                UserProfileScreen(
+                ProfileScreen(
                     onNavigateBack = { navController.popBackStack() },
+                    onNavigateToEditProfile = { },
+                    onNavigateToTravelStats = { },
                     onNavigateToFollowers = { viewedUserId ->
                         navController.navigate(SoraScreens.Followers.createRoute(viewedUserId))
                     },
                     onNavigateToFollowing = { viewedUserId ->
                         navController.navigate(SoraScreens.Following.createRoute(viewedUserId))
                     },
+                    onNavigateToSettings = { },
                     onNavigateToCountryCollection = { userId, countryCode ->
                         navController.navigate(SoraScreens.CountryCollection.createRoute(userId, countryCode))
+                    },
+                    onNavigateToUserProfile = { userId ->
+                        navController.navigate(SoraScreens.UserProfile.createRoute(userId))
                     }
                 )
             }

@@ -446,4 +446,12 @@
     <string name="error_posting_comment">Error posting comment</string>
     <string name="error_deleting_comment">Error deleting comment</string>
 
+    <string name="profile_my_posts">My Posts</string>
+    <string name="profile_user_posts">Posts</string>
+    <string name="profile_show_list">Show list</string>
+    <string name="profile_show_globe">Show globe</string>
+    <string name="profile_globe_coming_soon">3D Globe coming soon</string>
+    <string name="profile_no_posts">No posts yet</string>
+    <string name="error_loading_posts">Error loading posts</string>
+
 </resources>

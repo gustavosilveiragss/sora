@@ -37,11 +37,6 @@ data class CountryCollectionUiState(
     val postsLoaded: Boolean = false
 )
 
-data class LikeModification(
-    val isLiked: Boolean,
-    val likesCount: Int
-)
-
 @HiltViewModel
 class CountryCollectionViewModel @Inject constructor(
     private val countryRepository: CountryRepository,

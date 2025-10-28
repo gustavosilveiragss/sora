@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.sora.android.R
 import com.sora.android.domain.model.CollectionCode
 import com.sora.android.ui.theme.CollectionIcons
+import com.sora.android.ui.theme.SoraBackground
 import com.sora.android.ui.theme.SoraPrimary
 import com.sora.android.ui.theme.SoraTextPrimary
 import com.sora.android.ui.theme.SoraTextSecondary
@@ -38,7 +39,7 @@ fun CollectionFilterTabRow(
     ScrollableTabRow(
         selectedTabIndex = tabs.indexOfFirst { it.code == selectedCollection },
         modifier = modifier.fillMaxWidth(),
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = SoraBackground,
         contentColor = SoraPrimary,
         edgePadding = 16.dp,
         indicator = {},
@@ -57,7 +58,7 @@ fun CollectionFilterTabRow(
                         .padding(vertical = 8.dp)
                         .height(36.dp),
                     shape = MaterialTheme.shapes.medium,
-                    color = if (isSelected) SoraPrimary else MaterialTheme.colorScheme.surface,
+                    color = if (isSelected) SoraPrimary else SoraBackground,
                     border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
                         1.dp,
                         MaterialTheme.colorScheme.outlineVariant

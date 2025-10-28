@@ -36,6 +36,7 @@ fun SoraPostCard(
     isLiked: Boolean,
     timestamp: String,
     cityName: String? = null,
+    countryName: String? = null,
     isOwnPost: Boolean = false,
     currentUserId: Long? = null,
     onProfileClick: () -> Unit = {},
@@ -59,6 +60,7 @@ fun SoraPostCard(
                 username = username,
                 profileImageUrl = profileImageUrl,
                 cityName = cityName,
+                countryName = countryName,
                 timeAgo = timeAgo,
                 isOwnPost = isOwnPost,
                 onProfileClick = onProfileClick
@@ -149,6 +151,7 @@ private fun PostHeader(
     username: String,
     profileImageUrl: String?,
     cityName: String?,
+    countryName: String?,
     timeAgo: String,
     isOwnPost: Boolean,
     onProfileClick: () -> Unit
@@ -197,8 +200,15 @@ private fun PostHeader(
                         modifier = Modifier.size(12.dp),
                         tint = SoraTextSecondary
                     )
+
+                    val locationText = if (!countryName.isNullOrBlank()) {
+                        "$cityName - $countryName • $timeAgo"
+                    } else {
+                        "$cityName • $timeAgo"
+                    }
+
                     Text(
-                        text = "$cityName • $timeAgo",
+                        text = locationText,
                         style = MaterialTheme.typography.bodySmall,
                         color = SoraTextSecondary
                     )

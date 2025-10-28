@@ -435,4 +435,12 @@
     <string name="error_posting_comment">Erro ao enviar comentário</string>
     <string name="error_deleting_comment">Erro ao excluir comentário</string>
 
+    <string name="profile_my_posts">Minhas Publicações</string>
+    <string name="profile_user_posts">Publicações</string>
+    <string name="profile_show_list">Mostrar lista</string>
+    <string name="profile_show_globe">Mostrar globo</string>
+    <string name="profile_globe_coming_soon">Globo 3D em breve</string>
+    <string name="profile_no_posts">Nenhuma publicação ainda</string>
+    <string name="error_loading_posts">Erro ao carregar publicações</string>
+
 </resources>
