@@ -54,7 +54,11 @@ fun MainNavigationScreen(
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(SoraScreens.MainGlobe.route) {
-                PlaceholderScreen(title = stringResource(R.string.main_globe))
+                HomeScreen(
+                    onNavigateToProfile = { userId ->
+                        navController.navigate(SoraScreens.UserProfile.createRoute(userId))
+                    }
+                )
             }
 
             composable(SoraScreens.Explore.route) {

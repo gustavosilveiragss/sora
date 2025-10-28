@@ -443,4 +443,14 @@
     <string name="profile_no_posts">Nenhuma publicação ainda</string>
     <string name="error_loading_posts">Erro ao carregar publicações</string>
 
+    <string name="home_feed">Feed</string>
+    <string name="feed_empty_title">Seu feed está vazio</string>
+    <string name="feed_empty_message">Siga outros usuários para ver suas publicações aqui</string>
+    <string name="error_loading_feed">Erro ao carregar o feed</string>
+    <string name="error_loading_more">Erro ao carregar mais publicações</string>
+    <string name="globe_view_coming_soon">Visualização de globo em breve</string>
+    <string name="refresh">Atualizar</string>
+    <string name="dismiss">Dispensar</string>
+    <string name="try_again">Tentar novamente</string>
+
 </resources>

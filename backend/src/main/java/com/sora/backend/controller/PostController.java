@@ -35,12 +35,14 @@ public class PostController {
     private final UserAccountService userAccountService;
     private final LikePostService likePostService;
     private final CommentService commentService;
+    private final com.sora.backend.repository.FollowRepository followRepository;
 
-    public PostController(PostService postService, UserAccountService userAccountService, LikePostService likePostService, CommentService commentService) {
+    public PostController(PostService postService, UserAccountService userAccountService, LikePostService likePostService, CommentService commentService, com.sora.backend.repository.FollowRepository followRepository) {
         this.postService = postService;
         this.userAccountService = userAccountService;
         this.likePostService = likePostService;
         this.commentService = commentService;
+        this.followRepository = followRepository;
     }
 
     @PostMapping
@@ -130,6 +132,20 @@ public class PostController {
         List<Post> posts = postService.getPostsBySharedGroup(groupId);
         List<PostResponseDto> responses = posts.stream().map(post -> mapToPostResponseDto(post, currentUser)).toList();
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/feed")
+    @Operation(summary = "Get feed posts", description = "Get paginated feed with posts from followed users and own posts")
+    @ApiResponse(responseCode = "200", description = "Feed retrieved successfully")
+    public ResponseEntity<Page<PostResponseDto>> getFeed(@Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page, @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size, Authentication authentication) {
+        UserAccount currentUser = getCurrentUser(authentication);
+        List<Long> followedUserIds = followRepository.findFollowingUserIds(currentUser.getId());
+        List<Long> allUserIds = new java.util.ArrayList<>(followedUserIds);
+        allUserIds.add(currentUser.getId());
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Post> posts = postService.getFeedPosts(allUserIds, pageable);
+        Page<PostResponseDto> response = posts.map(post -> mapToPostResponseDto(post, currentUser));
+        return ResponseEntity.ok(response);
     }
 
     private UserAccount getCurrentUser(Authentication authentication) {

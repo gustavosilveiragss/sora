@@ -1,5 +1,6 @@
 package com.sora.android.ui.components
 
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -126,7 +127,9 @@ fun FilterablePostList(
                             onCommentAuthorProfileClick = onProfileClick,
                             onLikeClick = onLikeClickStable,
                             onCommentClick = onCommentClickStable,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItemPlacement(tween(durationMillis = 250))
                         )
                     }
                 }

@@ -5,6 +5,7 @@ import com.sora.backend.dto.PostCreateRequestDto;
 import com.sora.backend.dto.PostUpdateRequestDto;
 import com.sora.backend.model.Collection;
 import com.sora.backend.model.Country;
+import com.sora.backend.model.Follow;
 import com.sora.backend.model.Post;
 import com.sora.backend.model.PostSharingOption;
 import com.sora.backend.model.PostVisibilityType;
@@ -386,5 +387,148 @@ class PostControllerIntegrationTest extends BaseIntegrationTest {
         mockMvc.perform(get("/api/posts/shared-group/non-existent-group-id")
                 .header("Authorization", "Bearer " + testUser1Token))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void getFeed_WithFollowedUsersAndOwnPosts() throws Exception {
+        Follow follow = new Follow();
+        follow.setFollower(testUser1);
+        follow.setFollowing(testUser2);
+        follow.setCreatedAt(java.time.LocalDateTime.now());
+        followRepository.save(follow);
+
+        Post user2Post = new Post();
+        user2Post.setAuthor(testUser2);
+        user2Post.setProfileOwner(testUser2);
+        user2Post.setCountry(testCountry);
+        user2Post.setCollection(testCollection);
+        user2Post.setCityName("Rio de Janeiro");
+        user2Post.setCityLatitude(-22.9068);
+        user2Post.setCityLongitude(-43.1729);
+        user2Post.setCaption("User 2 post");
+        user2Post.setVisibilityType(PostVisibilityType.PERSONAL);
+        user2Post.setCreatedAt(java.time.LocalDateTime.now());
+        postRepository.save(user2Post);
+
+        mockMvc.perform(get("/api/posts/feed")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.totalElements").value(2));
+    }
+
+    @Test
+    void getFeed_OnlyOwnPostsWhenNotFollowingAnyone() throws Exception {
+        mockMvc.perform(get("/api/posts/feed")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].author.username").value("testuser1"));
+    }
+
+    @Test
+    void getFeed_WithPagination() throws Exception {
+        for (int i = 0; i < 25; i++) {
+            Post post = new Post();
+            post.setAuthor(testUser1);
+            post.setProfileOwner(testUser1);
+            post.setCountry(testCountry);
+            post.setCollection(testCollection);
+            post.setCityName("City " + i);
+            post.setCityLatitude(-23.5558);
+            post.setCityLongitude(-46.6396);
+            post.setCaption("Post number " + i);
+            post.setVisibilityType(PostVisibilityType.PERSONAL);
+            post.setCreatedAt(java.time.LocalDateTime.now().minusMinutes(i));
+            postRepository.save(post);
+        }
+
+        mockMvc.perform(get("/api/posts/feed")
+                .param("page", "0")
+                .param("size", "10")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(10))
+                .andExpect(jsonPath("$.totalElements").value(26))
+                .andExpect(jsonPath("$.totalPages").value(3))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(10));
+
+        mockMvc.perform(get("/api/posts/feed")
+                .param("page", "2")
+                .param("size", "10")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(6))
+                .andExpect(jsonPath("$.number").value(2))
+                .andExpect(jsonPath("$.last").value(true));
+    }
+
+    @Test
+    void getFeed_OrderedByCreatedAtDesc() throws Exception {
+        postRepository.deleteAll();
+
+        Follow follow = new Follow();
+        follow.setFollower(testUser1);
+        follow.setFollowing(testUser2);
+        follow.setCreatedAt(java.time.LocalDateTime.now());
+        followRepository.save(follow);
+
+        Post oldPost = new Post();
+        oldPost.setAuthor(testUser2);
+        oldPost.setProfileOwner(testUser2);
+        oldPost.setCountry(testCountry);
+        oldPost.setCollection(testCollection);
+        oldPost.setCityName("Old City");
+        oldPost.setCityLatitude(-22.9068);
+        oldPost.setCityLongitude(-43.1729);
+        oldPost.setCaption("Old post");
+        oldPost.setVisibilityType(PostVisibilityType.PERSONAL);
+        oldPost.setCreatedAt(java.time.LocalDateTime.now().minusDays(2));
+        postRepository.save(oldPost);
+
+        Post middlePost = new Post();
+        middlePost.setAuthor(testUser1);
+        middlePost.setProfileOwner(testUser1);
+        middlePost.setCountry(testCountry);
+        middlePost.setCollection(testCollection);
+        middlePost.setCityName("Middle City");
+        middlePost.setCityLatitude(-23.5558);
+        middlePost.setCityLongitude(-46.6396);
+        middlePost.setCaption("Middle post");
+        middlePost.setVisibilityType(PostVisibilityType.PERSONAL);
+        middlePost.setCreatedAt(java.time.LocalDateTime.now().minusDays(1));
+        postRepository.save(middlePost);
+
+        Post newPost = new Post();
+        newPost.setAuthor(testUser2);
+        newPost.setProfileOwner(testUser2);
+        newPost.setCountry(testCountry);
+        newPost.setCollection(testCollection);
+        newPost.setCityName("New City");
+        newPost.setCityLatitude(-22.9068);
+        newPost.setCityLongitude(-43.1729);
+        newPost.setCaption("New post");
+        newPost.setVisibilityType(PostVisibilityType.PERSONAL);
+        newPost.setCreatedAt(java.time.LocalDateTime.now());
+        postRepository.save(newPost);
+
+        mockMvc.perform(get("/api/posts/feed")
+                .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.content[0].caption").value("New post"))
+                .andExpect(jsonPath("$.content[1].caption").value("Middle post"))
+                .andExpect(jsonPath("$.content[2].caption").value("Old post"));
+    }
+
+    @Test
+    void getFeed_Unauthorized() throws Exception {
+        mockMvc.perform(get("/api/posts/feed"))
+                .andExpect(status().isUnauthorized());
     }
 }

@@ -454,4 +454,14 @@
     <string name="profile_no_posts">No posts yet</string>
     <string name="error_loading_posts">Error loading posts</string>
 
+    <string name="home_feed">Feed</string>
+    <string name="feed_empty_title">Your feed is empty</string>
+    <string name="feed_empty_message">Follow other users to see their posts here</string>
+    <string name="error_loading_feed">Error loading feed</string>
+    <string name="error_loading_more">Error loading more posts</string>
+    <string name="globe_view_coming_soon">Globe view coming soon</string>
+    <string name="refresh">Refresh</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="try_again">Try again</string>
+
 </resources>

@@ -1,0 +1,1646 @@
+{
+	"info": {
+		"_postman_id": "e3970702-9766-4b8b-af3a-29b0e496ae73",
+		"name": "SORA",
+		"description": "Comprehensive API collection for SORA social network - 70+ endpoints covering all 27 functional requirements",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "17463496"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register User - RF-001",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"joao_nomade\",\n  \"email\": \"joao@email.com\",\n  \"password\": \"MinhaSenh@123\",\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva\",\n  \"bio\": \"Digital nomad explorando o mundo\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"register"
+							]
+						},
+						"description": "Cadastro de novo usuário no sistema"
+					},
+					"response": []
+				},
+				{
+					"name": "Login User - RF-002",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('access_token', response.tokens.accessToken);",
+									"    pm.collectionVariables.set('refresh_token', response.tokens.refreshToken);",
+									"    pm.collectionVariables.set('user_id', response.user.id);",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"julia.oliveira@email.com\",\n  \"password\": \"MinhaSenh@123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Autenticação de usuário com geração de tokens JWT"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('access_token', response.accessToken);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/refresh",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"refresh"
+							]
+						},
+						"description": "Renovar access token usando refresh token"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('access_token', '');",
+									"    pm.collectionVariables.set('refresh_token', '');",
+									"    pm.collectionVariables.set('user_id', '');",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout do usuário autenticado"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de autenticação e gerenciamento de sessão"
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get My Profile - RF-003",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"profile"
+							]
+						},
+						"description": "Obter perfil do usuário autenticado"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile - RF-003",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"João Carlos\",\n  \"lastName\": \"Silva Santos\",\n  \"bio\": \"Nomade digital apaixonado por fotografia e culinária local. 🌍📸\",\n  \"username\": \"joao_nomade_photo\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"profile"
+							]
+						},
+						"description": "Atualizar dados do perfil do usuário"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Profile Picture - RF-003",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"description": "Profile picture file (max 10MB, JPG/PNG/WebP)",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/users/profile/picture",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"profile",
+								"picture"
+							]
+						},
+						"description": "Upload de foto de perfil via Cloudinary"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID - RF-017",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Visualizar perfil público de outro usuário"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Users - RF-016",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/search?q=ana&countryCode=BR&page=0&size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "ana",
+									"description": "Search term (min 2 characters)"
+								},
+								{
+									"key": "countryCode",
+									"value": "BR",
+									"description": "Filter by visited country (optional)"
+								},
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (default: 0)"
+								},
+								{
+									"key": "size",
+									"value": "10",
+									"description": "Page size (default: 20, max: 100)"
+								}
+							]
+						},
+						"description": "Pesquisar usuários por nome/username com filtros"
+					},
+					"response": []
+				}
+			],
+			"description": "Gerenciamento de usuários e perfis"
+		},
+		{
+			"name": "Social Features",
+			"item": [
+				{
+					"name": "Follow User - RF-015",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/{{user_id}}/follow",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}",
+								"follow"
+							]
+						},
+						"description": "Seguir outro usuário (sistema unilateral)"
+					},
+					"response": []
+				},
+				{
+					"name": "Unfollow User - RF-015",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/{{user_id}}/follow",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}",
+								"follow"
+							]
+						},
+						"description": "Deixar de seguir usuário"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Followers - RF-024",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/{{user_id}}/followers?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}",
+								"followers"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listar seguidores de um usuário"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Following - RF-025",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users/{{user_id}}/following?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"{{user_id}}",
+								"following"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listar usuários seguidos"
+					},
+					"response": []
+				}
+			],
+			"description": "Funcionalidades sociais: seguir, seguidores, seguindo"
+		},
+		{
+			"name": "Country Collections",
+			"item": [
+				{
+					"name": "Get My Country Collections - RF-007,RF-009",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/country-collections",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"country-collections"
+							]
+						},
+						"description": "Obter coleções de países do usuário autenticado (Globo do Perfil)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Country Collections - RF-017",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/country-collections/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"country-collections",
+								"{{user_id}}"
+							]
+						},
+						"description": "Obter coleções de países de outro usuário"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Country Collection Posts - RF-010",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/country-collections/{{user_id}}/{{country_code}}/posts?collectionCode=CULINARY&cityName=São Paulo&page=0&size=20&sortBy=createdAt&sortDirection=DESC",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"country-collections",
+								"{{user_id}}",
+								"{{country_code}}",
+								"posts"
+							],
+							"query": [
+								{
+									"key": "collectionCode",
+									"value": "CULINARY",
+									"description": "Filter by collection (GENERAL, CULINARY, EVENTS, OTHERS)"
+								},
+								{
+									"key": "cityName",
+									"value": "São Paulo",
+									"description": "Filter by city name"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sortBy",
+									"value": "createdAt",
+									"description": "Sort field: createdAt, likesCount"
+								},
+								{
+									"key": "sortDirection",
+									"value": "DESC",
+									"description": "Sort direction: ASC, DESC"
+								}
+							]
+						},
+						"description": "Obter posts de um país específico do usuário (Subperfil por País)"
+					},
+					"response": []
+				}
+			],
+			"description": "Sistema de coleções eternas por país"
+		},
+		{
+			"name": "Travel Permissions",
+			"item": [
+				{
+					"name": "Grant Travel Permission - RF-020",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"granteeUsername\": \"ana_travels\",\n  \"countryCode\": \"BR\",\n  \"invitationMessage\": \"Vamos documentar nossa viagem pelo Brasil juntos! 🇧🇷\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/travel-permissions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"travel-permissions"
+							]
+						},
+						"description": "Conceder permissão para outro usuário postar em seu país"
+					},
+					"response": []
+				},
+				{
+					"name": "Accept Travel Permission - RF-021",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/travel-permissions/1/accept",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"travel-permissions",
+								"1",
+								"accept"
+							]
+						},
+						"description": "Aceitar convite de permissão de viagem"
+					},
+					"response": []
+				},
+				{
+					"name": "Decline Travel Permission - RF-021",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/travel-permissions/1/decline",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"travel-permissions",
+								"1",
+								"decline"
+							]
+						},
+						"description": "Rejeitar convite de permissão de viagem"
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Travel Permission - RF-021",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/travel-permissions/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"travel-permissions",
+								"1"
+							]
+						},
+						"description": "Revogar permissão ativa (posts existentes permanecem)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Granted Permissions - RF-021",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/travel-permissions/granted?status=ACTIVE&page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"travel-permissions",
+								"granted"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "ACTIVE",
+									"description": "Filter by status: PENDING, ACTIVE, DECLINED, REVOKED"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listar permissões que eu concedi"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Received Permissions - RF-021",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/travel-permissions/received?status=ACTIVE&page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"travel-permissions",
+								"received"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "ACTIVE",
+									"description": "Filter by status: PENDING, ACTIVE, DECLINED, REVOKED"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listar permissões que recebi"
+					},
+					"response": []
+				}
+			],
+			"description": "Sistema de compartilhamento de viagem por país"
+		},
+		{
+			"name": "Posts & Media",
+			"item": [
+				{
+					"name": "Create Post - RF-004,RF-005,RF-006",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.posts && response.posts.length > 0) {",
+									"        pm.collectionVariables.set('post_id', response.posts[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"countryCode\": \"BR\",\n  \"collectionCode\": \"CULINARY\",\n  \"cityName\": \"São Paulo\",\n  \"cityLatitude\": -23.5558,\n  \"cityLongitude\": -46.6396,\n  \"caption\": \"Melhor feijoada da cidade no restaurante da dona Maria! 🍛\",\n  \"collaborationOption\": \"BOTH_PROFILES\",\n  \"collaboratorUserId\": 2,\n  \"sharingOption\": \"BOTH_PROFILES\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/posts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts"
+							]
+						},
+						"description": "Criar novo post com opções de compartilhamento inteligente"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Post Media - RF-004,RF-005",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"description": "Array of image/video files (max 10MB each, max 10 files)",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/posts/{{post_id}}/media",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"{{post_id}}",
+								"media"
+							]
+						},
+						"description": "Upload de fotos/vídeos para post via Cloudinary"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Post Details - RF-010",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/posts/{{post_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"{{post_id}}"
+							]
+						},
+						"description": "Obter detalhes completos de um post"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Post - RF-022",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"caption\": \"Melhor feijoada da cidade no restaurante da dona Maria! Recomendo muito! 🍛⭐️\",\n  \"collectionCode\": \"CULINARY\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/posts/{{post_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"{{post_id}}"
+							]
+						},
+						"description": "Editar post (próprio ou com permissão ativa)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Post - RF-022",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/posts/{{post_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"{{post_id}}"
+							]
+						},
+						"description": "Excluir post (controle independente para posts compartilhados)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Shared Post Group - RF-023",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/posts/shared-group/uuid-abc123-def456",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"shared-group",
+								"uuid-abc123-def456"
+							]
+						},
+						"description": "Obter todos os posts de um grupo compartilhado"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Feed - RF-013 Home/Feed",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/posts/feed?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"feed"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Número da página (padrão: 0)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Tamanho da página (padrão: 20)"
+								}
+							]
+						},
+						"description": "Feed paginado com posts de usuários seguidos + posts próprios, ordenado por data DESC"
+					},
+					"response": []
+				}
+			],
+			"description": "Criação e gerenciamento de posts com sistema de duplicação inteligente"
+		},
+		{
+			"name": "Likes & Comments",
+			"item": [
+				{
+					"name": "Like Post - RF-018",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/posts/{{post_id}}/like",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"{{post_id}}",
+								"like"
+							]
+						},
+						"description": "Curtir um post (cria notificação para autor)"
+					},
+					"response": []
+				},
+				{
+					"name": "Unlike Post - RF-018",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/posts/{{post_id}}/like",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"{{post_id}}",
+								"like"
+							]
+						},
+						"description": "Remover curtida de um post"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Post Likes - RF-018",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/posts/{{post_id}}/likes?page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"{{post_id}}",
+								"likes"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listar usuários que curtiram o post"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Comment - RF-019",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Nossa, que lugar incrível! Preciso conhecer quando for pra São Paulo 😍\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/posts/{{post_id}}/comments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"{{post_id}}",
+								"comments"
+							]
+						},
+						"description": "Comentar em um post (max 500 caracteres)"
+					},
+					"response": []
+				},
+				{
+					"name": "Reply to Comment - RF-019",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Com certeza! Te mando o endereço no DM 📍\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/posts/comments/1/reply",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"comments",
+								"1",
+								"reply"
+							]
+						},
+						"description": "Responder a um comentário (sistema aninhado)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Post Comments - RF-019",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/posts/{{post_id}}/comments?includeReplies=true&page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"{{post_id}}",
+								"comments"
+							],
+							"query": [
+								{
+									"key": "includeReplies",
+									"value": "true",
+									"description": "Include nested replies"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listar comentários do post com respostas aninhadas"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Comment",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Atualizado: Nossa, que lugar incrível! Preciso conhecer quando for pra São Paulo 😍🔥\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/posts/comments/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"comments",
+								"1"
+							]
+						},
+						"description": "Atualizar comentário (apenas autor)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Comment",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/posts/comments/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"posts",
+								"comments",
+								"1"
+							]
+						},
+						"description": "Excluir comentário (apenas autor)"
+					},
+					"response": []
+				},
+				{
+					"name": "Like Comment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/comments/{{comment_id}}/like",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"comments",
+								"{{comment_id}}",
+								"like"
+							]
+						},
+						"description": "Curtir um comentário"
+					},
+					"response": []
+				},
+				{
+					"name": "Unlike Comment",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/comments/{{comment_id}}/like",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"comments",
+								"{{comment_id}}",
+								"like"
+							]
+						},
+						"description": "Remover curtida de um comentário"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Comment Likes Count",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/comments/{{comment_id}}/likes/count",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"comments",
+								"{{comment_id}}",
+								"likes",
+								"count"
+							]
+						},
+						"description": "Obter número de curtidas de um comentário"
+					},
+					"response": []
+				}
+			],
+			"description": "Sistema de likes e comentários aninhados"
+		},
+		{
+			"name": "Globe Interface",
+			"item": [
+				{
+					"name": "Main Globe Data - RF-008",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/globe/main",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"globe",
+								"main"
+							]
+						},
+						"description": "Dados do globo principal (feed de usuários seguidos por país)"
+					},
+					"response": []
+				},
+				{
+					"name": "Profile Globe Data - RF-009",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/globe/profile/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"globe",
+								"profile",
+								"{{user_id}}"
+							]
+						},
+						"description": "Dados do globo de perfil do usuário (países visitados)"
+					},
+					"response": []
+				},
+				{
+					"name": "Explore Globe Data - RF-014",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/globe/explore?timeframe=month&minPosts=2",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"globe",
+								"explore"
+							],
+							"query": [
+								{
+									"key": "timeframe",
+									"value": "month",
+									"description": "Time period: week, month, year"
+								},
+								{
+									"key": "minPosts",
+									"value": "2",
+									"description": "Minimum posts per country"
+								}
+							]
+						},
+						"description": "Dados do globo de exploração (descoberta global)"
+					},
+					"response": []
+				},
+				{
+					"name": "Country Recent Posts - RF-008",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/globe/countries/{{country_code}}/recent?days=30&page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"globe",
+								"countries",
+								"{{country_code}}",
+								"recent"
+							],
+							"query": [
+								{
+									"key": "days",
+									"value": "30",
+									"description": "Last X days (max: 90)"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Posts recentes de usuários seguidos em país específico"
+					},
+					"response": []
+				}
+			],
+			"description": "Sistema de interface 3D globe com dados agregados"
+		},
+		{
+			"name": "Gamification",
+			"item": [
+				{
+					"name": "User Stats - RF-013",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/gamification/users/{{user_id}}/stats",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"gamification",
+								"users",
+								"{{user_id}}",
+								"stats"
+							]
+						},
+						"description": "Estatísticas de viagem do usuário (países, cidades, posts, rankings)"
+					},
+					"response": []
+				},
+				{
+					"name": "Leaderboard - RF-013",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/gamification/leaderboard?metric=countries&timeframe=all&limit=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"gamification",
+								"leaderboard"
+							],
+							"query": [
+								{
+									"key": "metric",
+									"value": "countries",
+									"description": "Ranking metric: countries, cities, posts"
+								},
+								{
+									"key": "timeframe",
+									"value": "all",
+									"description": "Time period: all, year, month"
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Max results (default: 20, max: 100)"
+								}
+							]
+						},
+						"description": "Ranking de viagem entre usuários seguidos"
+					},
+					"response": []
+				}
+			],
+			"description": "Sistema de gamificação com estatísticas e rankings individuais"
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Get Notifications - RF-026",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/notifications?unreadOnly=false&type=&page=0&size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "unreadOnly",
+									"value": "false",
+									"description": "Show only unread notifications"
+								},
+								{
+									"key": "type",
+									"value": "",
+									"description": "Filter by notification type (optional)"
+								},
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Listar notificações do usuário com filtros"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Notification as Read - RF-026",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/notifications/1/read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications",
+								"1",
+								"read"
+							]
+						},
+						"description": "Marcar notificação específica como lida"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark All as Read - RF-026",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/notifications/mark-all-read",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"notifications",
+								"mark-all-read"
+							]
+						},
+						"description": "Marcar todas as notificações como lidas"
+					},
+					"response": []
+				}
+			],
+			"description": "Sistema completo de notificações do usuário"
+		},
+		{
+			"name": "Locations & Collections",
+			"item": [
+				{
+					"name": "Get All Countries",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/locations/countries",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"locations",
+								"countries"
+							]
+						},
+						"description": "Listar todos os países disponíveis com coordenadas"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Locations - RF-012",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/locations/search?q=sao&countryCode=BR&limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"locations",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "sao",
+									"description": "Search term (min 2 characters)"
+								},
+								{
+									"key": "countryCode",
+									"value": "BR",
+									"description": "Filter by country code (optional)"
+								},
+								{
+									"key": "limit",
+									"value": "5",
+									"description": "Max results (default: 10, max: 50)"
+								}
+							]
+						},
+						"description": "Buscar cidades via OpenStreetMap com filtros"
+					},
+					"response": []
+				},
+				{
+					"name": "Reverse Geocode",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/locations/reverse?lat=-23.5558&lon=-46.6396",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"locations",
+								"reverse"
+							],
+							"query": [
+								{
+									"key": "lat",
+									"value": "-23.5558",
+									"description": "Latitude coordinate"
+								},
+								{
+									"key": "lon",
+									"value": "-46.6396",
+									"description": "Longitude coordinate"
+								}
+							]
+						},
+						"description": "Geocodificação reversa via OpenStreetMap"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Collections - RF-011",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/collections",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"collections"
+							]
+						},
+						"description": "Listar coleções disponíveis (Geral, Culinária, Eventos, Outros)"
+					},
+					"response": []
+				}
+			],
+			"description": "Localização via OpenStreetMap e categorias de posts"
+		},
+		{
+			"name": "Feed",
+			"item": [
+				{
+					"name": "Get Feed - Social Global",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/feed?page=0&size=20&timeframe=month",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"feed"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "timeframe",
+									"value": "month",
+									"description": "Time period: week, month, all"
+								}
+							]
+						},
+						"description": "Feed personalizado com posts de usuários seguidos"
+					},
+					"response": []
+				}
+			],
+			"description": "Feed social personalizado com algoritmo inteligente"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-set Accept-Language header based on locale",
+					"pm.request.headers.add({",
+					"    key: 'Accept-Language',",
+					"    value: 'pt-BR,en;q=0.9'",
+					"});",
+					"",
+					"// Add common headers",
+					"pm.request.headers.add({",
+					"    key: 'User-Agent',",
+					"    value: 'SORA-Postman-Collection/1.0'",
+					"});"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Common response validation",
+					"pm.test('Response time is less than 5000ms', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"pm.test('Response has correct content-type', function () {",
+					"    if (pm.response.code !== 204) {",
+					"        pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+					"    }",
+					"});",
+					"",
+					"// Log errors for debugging",
+					"if (pm.response.code >= 400) {",
+					"    console.log('Error Response:', pm.response.json());",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080/api",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "post_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "country_code",
+			"value": "BR",
+			"type": "string"
+		}
+	]
+}

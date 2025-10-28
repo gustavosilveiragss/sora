@@ -1,6 +1,8 @@
 package com.sora.android.data.repository
 
 import android.content.Context
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.sora.android.data.local.TokenManager
 import com.sora.android.data.local.dao.PostDao
@@ -105,35 +107,16 @@ class PostRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getFeed(page: Int, size: Int): Flow<PagingData<PostModel>> {
-        return flow {
-            val cachedPosts = postDao.getRecentPosts(size)
-
-            if (cachedPosts.isNotEmpty()) {
-                emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
+        return Pager(
+            config = PagingConfig(
+                pageSize = size,
+                enablePlaceholders = false,
+                prefetchDistance = 3
+            ),
+            pagingSourceFactory = {
+                com.sora.android.data.paging.FeedPagingSource(apiService)
             }
-
-            try {
-                val globeResponse = apiService.getMainGlobeData()
-                if (globeResponse.isSuccessful) {
-                    globeResponse.body()?.let { globeData ->
-                        val globePosts = globeData.countryMarkers.flatMap { marker ->
-                            marker.recentPosts.map { globePost ->
-                                globePost.toPostModel(marker.countryCode)
-                            }
-                        }
-                        val postEntities = globePosts.map { it.toPostEntity() }
-                        postEntities.forEach { postDao.insertPost(it) }
-                        emit(PagingData.from(globePosts))
-                    }
-                } else if (cachedPosts.isEmpty()) {
-                    emit(PagingData.empty())
-                }
-            } catch (e: Exception) {
-                if (cachedPosts.isEmpty()) {
-                    emit(PagingData.empty())
-                }
-            }
-        }
+        ).flow
     }
 
     override suspend fun getUserPosts(userId: Long, page: Int, size: Int): Flow<PagingData<PostModel>> {

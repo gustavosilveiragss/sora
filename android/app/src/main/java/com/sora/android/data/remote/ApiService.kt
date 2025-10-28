@@ -112,6 +112,12 @@ interface ApiService {
     @GET("posts/shared-group/{groupId}")
     suspend fun getSharedPostGroup(@Path("groupId") groupId: String): Response<List<PostModel>>
 
+    @GET("posts/feed")
+    suspend fun getFeed(
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<PagedResponse<PostModel>>
+
     // Likes
     @POST("posts/{id}/like")
     suspend fun likePost(@Path("id") postId: Long): Response<LikeCreateResponse>
