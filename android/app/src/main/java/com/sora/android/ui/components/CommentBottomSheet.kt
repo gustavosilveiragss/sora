@@ -39,6 +39,7 @@ fun CommentBottomSheet(
     onToggleReplies: (Long) -> Unit,
     onLikeComment: (Long) -> Unit,
     onUnlikeComment: (Long) -> Unit,
+    onProfileClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val sheetState = rememberModalBottomSheetState(
@@ -112,7 +113,8 @@ fun CommentBottomSheet(
                                 onDelete = onDeleteComment,
                                 onToggleReplies = onToggleReplies,
                                 onLikeComment = onLikeComment,
-                                onUnlikeComment = onUnlikeComment
+                                onUnlikeComment = onUnlikeComment,
+                                onProfileClick = onProfileClick
                             )
                         }
                     }
@@ -179,6 +181,7 @@ private fun CommentItem(
     onToggleReplies: (Long) -> Unit = {},
     onLikeComment: (Long) -> Unit,
     onUnlikeComment: (Long) -> Unit,
+    onProfileClick: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -192,7 +195,14 @@ private fun CommentItem(
             contentDescription = stringResource(R.string.profile_picture),
             modifier = Modifier
                 .size(32.dp)
-                .clip(CircleShape),
+                .clip(CircleShape)
+                .then(
+                    if (currentUserId != null && comment.author.id != currentUserId) {
+                        Modifier.clickable { onProfileClick(comment.author.id) }
+                    } else {
+                        Modifier
+                    }
+                ),
             contentScale = ContentScale.Crop
         )
 
@@ -209,7 +219,12 @@ private fun CommentItem(
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.SemiBold
                     ),
-                    color = SoraTextPrimary
+                    color = SoraTextPrimary,
+                    modifier = if (currentUserId != null && comment.author.id != currentUserId) {
+                        Modifier.clickable { onProfileClick(comment.author.id) }
+                    } else {
+                        Modifier
+                    }
                 )
 
                 Text(
@@ -304,7 +319,14 @@ private fun CommentItem(
                         contentDescription = stringResource(R.string.profile_picture),
                         modifier = Modifier
                             .size(24.dp)
-                            .clip(CircleShape),
+                            .clip(CircleShape)
+                            .then(
+                                if (currentUserId != null && reply.author.id != currentUserId) {
+                                    Modifier.clickable { onProfileClick(reply.author.id) }
+                                } else {
+                                    Modifier
+                                }
+                            ),
                         contentScale = ContentScale.Crop
                     )
 
@@ -321,7 +343,12 @@ private fun CommentItem(
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontWeight = FontWeight.SemiBold
                                 ),
-                                color = SoraTextPrimary
+                                color = SoraTextPrimary,
+                                modifier = if (currentUserId != null && reply.author.id != currentUserId) {
+                                    Modifier.clickable { onProfileClick(reply.author.id) }
+                                } else {
+                                    Modifier
+                                }
                             )
                             Text(
                                 text = formatTimeAgo(reply.createdAt),

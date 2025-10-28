@@ -39,6 +39,7 @@ fun SoraPostCard(
     isOwnPost: Boolean = false,
     currentUserId: Long? = null,
     onProfileClick: () -> Unit = {},
+    onCommentAuthorProfileClick: (Long) -> Unit = {},
     onLikeClick: () -> Unit = {},
     onCommentClick: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -133,6 +134,10 @@ fun SoraPostCard(
                 },
                 onUnlikeComment = { commentId ->
                     viewModel.unlikeComment(commentId, postId)
+                },
+                onProfileClick = { userId ->
+                    showComments = false
+                    onCommentAuthorProfileClick(userId)
                 }
             )
         }
@@ -151,7 +156,13 @@ private fun PostHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onProfileClick() }
+            .then(
+                if (!isOwnPost) {
+                    Modifier.clickable { onProfileClick() }
+                } else {
+                    Modifier
+                }
+            )
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

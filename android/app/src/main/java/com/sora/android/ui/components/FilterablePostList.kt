@@ -123,6 +123,7 @@ fun FilterablePostList(
                             isOwnPost = currentUserId != null && post.author.id == currentUserId,
                             currentUserId = currentUserId,
                             onProfileClick = onProfileClickStable,
+                            onCommentAuthorProfileClick = onProfileClick,
                             onLikeClick = onLikeClickStable,
                             onCommentClick = onCommentClickStable,
                             modifier = Modifier.fillMaxWidth()
