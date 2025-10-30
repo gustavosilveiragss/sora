@@ -81,12 +81,12 @@ class ProfileViewModel @Inject constructor(
         _userProfile,
         _postFilters
     ) { profile, filters ->
-        android.util.Log.d("ProfileViewModel", "Profile: ${profile?.id}, Filters: ${filters.collectionCode}")
+        android.util.Log.d("SORA_USER", "Profile: ${profile?.id}, Filters: ${filters.collectionCode}")
         profile to filters
     }.flatMapLatest { (profile, filters) ->
         _postsLoaded.update { false }
         profile?.id?.let { userId ->
-            android.util.Log.d("ProfileViewModel", "Loading posts for userId: $userId")
+            android.util.Log.d("SORA_USER", "Carregando posts para userId: $userId")
             postRepository.getUserPosts(
                 userId = userId,
                 page = 0,
@@ -98,7 +98,7 @@ class ProfileViewModel @Inject constructor(
                 }
             }
         } ?: run {
-            android.util.Log.d("ProfileViewModel", "No profile, returning empty")
+            android.util.Log.d("SORA_USER", "Sem perfil, retornando vazio")
             kotlinx.coroutines.flow.flow { emit(PagingData.empty()) }
         }
     }.combine(_likeModifications) { pagingData, modifications ->
@@ -121,11 +121,11 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             userRepository.getCurrentUserProfile().fold(
                 onSuccess = { profile ->
-                    android.util.Log.d("ProfileViewModel", "Current user loaded: ${profile.id}, bio=${profile.bio}")
+                    android.util.Log.d("SORA_USER", "Usuario atual carregado: ${profile.id}, bio=${profile.bio}")
                     _currentUserId.value = profile.id
                     if (targetUserId != null) {
                         _isOwnProfile.value = targetUserId == profile.id
-                        android.util.Log.d("ProfileViewModel", "isOwnProfile updated: ${_isOwnProfile.value} (targetUserId=$targetUserId, currentUserId=${profile.id})")
+                        android.util.Log.d("SORA_USER", "isOwnProfile atualizado: ${_isOwnProfile.value} (targetUserId=$targetUserId, currentUserId=${profile.id})")
                     }
                 },
                 onFailure = { }
@@ -137,22 +137,22 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                android.util.Log.d("ProfileViewModel", "Loading profile... targetUserId=$targetUserId")
+                android.util.Log.d("SORA_USER", "Carregando perfil... targetUserId=$targetUserId")
 
                 if (targetUserId == null) {
                     userRepository.getCurrentUserProfile().fold(
                         onSuccess = { profile ->
-                            android.util.Log.d("ProfileViewModel", "Own profile loaded: id=${profile.id}, username=${profile.username}, bio=${profile.bio}")
+                            android.util.Log.d("SORA_USER", "Perfil proprio carregado: id=${profile.id}, username=${profile.username}, bio=${profile.bio}")
                             _userProfile.value = profile
                         },
                         onFailure = { exception ->
-                            android.util.Log.e("ProfileViewModel", "Error loading profile", exception)
+                            android.util.Log.e("SORA_USER", "Erro ao carregar perfil", exception)
                             _error.value = exception.message
                         }
                     )
                 } else {
                     userRepository.getUserProfile(targetUserId).collect { profileModel ->
-                        android.util.Log.d("ProfileViewModel", "User profile loaded: ${profileModel?.id}")
+                        android.util.Log.d("SORA_USER", "Perfil de usuario carregado: ${profileModel?.id}")
                         profileModel?.let { profile ->
                             _userProfile.value = UserModel(
                                 id = profile.id,
@@ -172,11 +172,15 @@ class ProfileViewModel @Inject constructor(
                 }
 
                 _userProfile.value?.id?.let { userId ->
+                    android.util.Log.d("SORA_USER", "Carregando estatisticas de viagem para userId=$userId")
                     userRepository.getUserTravelStats(userId).fold(
                         onSuccess = { stats ->
+                            android.util.Log.d("SORA_USER", "Estatisticas de viagem SUCESSO: countries=${stats.totalCountriesVisited}, posts=${stats.totalPostsCount}, followers=${stats.totalFollowers}")
                             _travelStats.value = stats
+                            android.util.Log.d("SORA_USER", "Estatisticas de viagem definidas no estado: ${_travelStats.value}")
                         },
                         onFailure = { exception ->
+                            android.util.Log.e("SORA_USER", "Estatisticas de viagem FALHARAM: ${exception.message}", exception)
                             _error.value = exception.message
                         }
                     )
@@ -191,9 +195,13 @@ class ProfileViewModel @Inject constructor(
                         }
                     }
 
-                    val globeResponse = apiService.getProfileGlobeData(userId)
-                    if (globeResponse.isSuccessful) {
-                        _globeData.value = globeResponse.body()
+                    try {
+                        val globeResponse = apiService.getProfileGlobeData(userId)
+                        if (globeResponse.isSuccessful) {
+                            _globeData.value = globeResponse.body()
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.d("SORA_USER", "Dados do globo indisponiveis (offline): ${e.message}")
                     }
                 }
             } finally {
@@ -263,7 +271,7 @@ class ProfileViewModel @Inject constructor(
                     }
                 },
                 onFailure = { exception ->
-                    android.util.Log.e("ProfileViewModel", "Error toggling follow", exception)
+                    android.util.Log.e("SORA_USER", "Erro ao alternar follow", exception)
                 }
             )
 

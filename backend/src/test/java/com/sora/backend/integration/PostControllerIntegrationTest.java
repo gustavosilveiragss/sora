@@ -6,6 +6,7 @@ import com.sora.backend.dto.PostUpdateRequestDto;
 import com.sora.backend.model.Collection;
 import com.sora.backend.model.Country;
 import com.sora.backend.model.Follow;
+import com.sora.backend.model.LikePost;
 import com.sora.backend.model.Post;
 import com.sora.backend.model.PostSharingOption;
 import com.sora.backend.model.PostVisibilityType;
@@ -20,14 +21,14 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.hasSize;
-
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -529,6 +530,113 @@ class PostControllerIntegrationTest extends BaseIntegrationTest {
     @Test
     void getFeed_Unauthorized() throws Exception {
         mockMvc.perform(get("/api/posts/feed"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getExplorePosts_WithDefaultTimeframe() throws Exception {
+        mockMvc.perform(get("/api/posts/explore")
+                        .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void getExplorePosts_WithWeekTimeframe() throws Exception {
+        mockMvc.perform(get("/api/posts/explore")
+                        .param("timeframe", "week")
+                        .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
+    }
+
+    @Test
+    void getExplorePosts_WithMonthTimeframe() throws Exception {
+        mockMvc.perform(get("/api/posts/explore")
+                        .param("timeframe", "month")
+                        .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
+    }
+
+    @Test
+    void getExplorePosts_WithAllTimeframe() throws Exception {
+        mockMvc.perform(get("/api/posts/explore")
+                        .param("timeframe", "all")
+                        .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void getExplorePosts_OrderedByEngagement() throws Exception {
+        Post recentPost = new Post();
+        recentPost.setAuthor(testUser2);
+        recentPost.setProfileOwner(testUser2);
+        recentPost.setCountry(testCountry);
+        recentPost.setCollection(testCollection);
+        recentPost.setCityName("Recent City");
+        recentPost.setCityLatitude(-23.5505);
+        recentPost.setCityLongitude(-46.6333);
+        recentPost.setCaption("Recent post with less engagement");
+        recentPost.setCreatedAt(LocalDateTime.now().minusHours(1));
+        recentPost.setUpdatedAt(LocalDateTime.now().minusHours(1));
+        postRepository.save(recentPost);
+
+        Post olderPost = new Post();
+        olderPost.setAuthor(testUser2);
+        olderPost.setProfileOwner(testUser2);
+        olderPost.setCountry(testCountry);
+        olderPost.setCollection(testCollection);
+        olderPost.setCityName("Older City");
+        olderPost.setCityLatitude(-23.5505);
+        olderPost.setCityLongitude(-46.6333);
+        olderPost.setCaption("Older post");
+        olderPost.setCreatedAt(LocalDateTime.now().minusDays(3));
+        olderPost.setUpdatedAt(LocalDateTime.now().minusDays(3));
+        postRepository.save(olderPost);
+
+        mockMvc.perform(get("/api/posts/explore")
+                        .param("timeframe", "week")
+                        .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(3));
+    }
+
+    @Test
+    void getExplorePosts_WithPagination() throws Exception {
+        for (int i = 0; i < 25; i++) {
+            Post post = new Post();
+            post.setAuthor(testUser2);
+            post.setProfileOwner(testUser2);
+            post.setCountry(testCountry);
+            post.setCollection(testCollection);
+            post.setCityName("Test City " + i);
+            post.setCityLatitude(-23.5505);
+            post.setCityLongitude(-46.6333);
+            post.setCaption("Test post " + i);
+            post.setCreatedAt(LocalDateTime.now().minusHours(i));
+            post.setUpdatedAt(LocalDateTime.now().minusHours(i));
+            postRepository.save(post);
+        }
+
+        mockMvc.perform(get("/api/posts/explore")
+                        .param("page", "0")
+                        .param("size", "20")
+                        .header("Authorization", "Bearer " + testUser1Token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(20))
+                .andExpect(jsonPath("$.totalElements").value(26))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    @Test
+    void getExplorePosts_Unauthorized() throws Exception {
+        mockMvc.perform(get("/api/posts/explore"))
                 .andExpect(status().isUnauthorized());
     }
 }

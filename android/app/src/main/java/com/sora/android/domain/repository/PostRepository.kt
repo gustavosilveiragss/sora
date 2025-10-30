@@ -13,6 +13,7 @@ interface PostRepository {
     suspend fun deletePost(postId: Long): Result<Unit>
 
     suspend fun getFeed(page: Int = 0, size: Int = 20): Flow<PagingData<PostModel>>
+    suspend fun getExplorePosts(timeframe: String = "week", page: Int = 0, size: Int = 20): Flow<PagingData<PostModel>>
     suspend fun getUserPosts(userId: Long, page: Int = 0, size: Int = 20): Flow<PagingData<PostModel>>
     suspend fun getCountryPosts(
         userId: Long,

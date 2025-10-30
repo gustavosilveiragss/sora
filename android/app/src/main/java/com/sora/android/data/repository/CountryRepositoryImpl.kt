@@ -26,37 +26,89 @@ class CountryRepositoryImpl @Inject constructor(
     private val countryDao: CountryDao,
     private val cityDao: CityDao,
     private val tokenManager: TokenManager,
+    private val networkMonitor: com.sora.android.core.network.NetworkMonitor,
     @ApplicationContext private val context: Context
 ) : CountryRepository {
 
     override suspend fun getMyCountryCollections(): Flow<CountryCollectionsResponse> {
-        return flow {
-            try {
+        val currentUserId = tokenManager.getUserId() ?: 1L
+        return offlineFirstData(
+            tag = "CountryCollections-$currentUserId",
+            networkMonitor = networkMonitor,
+            getCached = {
+                val collections = countryDao.getCountryCollectionsByUser(currentUserId)
+                CountryCollectionsResponse(
+                    userId = currentUserId,
+                    username = "",
+                    totalCountriesVisited = collections.size,
+                    totalCitiesVisited = 0,
+                    totalPostsCount = collections.sumOf { it.postsCount },
+                    countries = collections.map { it.toCountryCollectionModel() }
+                )
+            },
+            fetchFromApi = {
                 val response = apiService.getCurrentUserCountryCollections()
                 if (response.isSuccessful) {
-                    response.body()?.let { collections ->
-                        emit(collections)
+                    response.body()?.also { collections ->
+                        val entities = collections.countries.map { model ->
+                            CountryCollection(
+                                id = "${collections.userId}_${model.countryCode}",
+                                userId = collections.userId,
+                                countryId = model.countryId,
+                                countryCode = model.countryCode,
+                                countryNameKey = model.countryNameKey,
+                                firstVisitDate = model.firstVisitDate,
+                                lastVisitDate = model.lastVisitDate,
+                                visitCount = model.visitCount,
+                                postsCount = model.postsCount,
+                                cacheTimestamp = System.currentTimeMillis()
+                            )
+                        }
+                        countryDao.insertCountryCollections(entities)
                     }
-                }
-            } catch (e: Exception) {
-                Log.e("CountryRepository", "Error getting my collections: ${e.message}", e)
+                } else null
             }
-        }
+        )
     }
 
     override suspend fun getUserCountryCollections(userId: Long): Flow<CountryCollectionsResponse> {
-        return flow {
-            try {
+        return offlineFirstData(
+            tag = "CountryCollections-$userId",
+            networkMonitor = networkMonitor,
+            getCached = {
+                val collections = countryDao.getCountryCollectionsByUser(userId)
+                CountryCollectionsResponse(
+                    userId = userId,
+                    username = "",
+                    totalCountriesVisited = collections.size,
+                    totalCitiesVisited = 0,
+                    totalPostsCount = collections.sumOf { it.postsCount },
+                    countries = collections.map { it.toCountryCollectionModel() }
+                )
+            },
+            fetchFromApi = {
                 val response = apiService.getUserCountryCollections(userId)
                 if (response.isSuccessful) {
-                    response.body()?.let { collections ->
-                        emit(collections)
+                    response.body()?.also { collections ->
+                        val entities = collections.countries.map { model ->
+                            CountryCollection(
+                                id = "${userId}_${model.countryCode}",
+                                userId = userId,
+                                countryId = model.countryId,
+                                countryCode = model.countryCode,
+                                countryNameKey = model.countryNameKey,
+                                firstVisitDate = model.firstVisitDate,
+                                lastVisitDate = model.lastVisitDate,
+                                visitCount = model.visitCount,
+                                postsCount = model.postsCount,
+                                cacheTimestamp = System.currentTimeMillis()
+                            )
+                        }
+                        countryDao.insertCountryCollections(entities)
                     }
-                }
-            } catch (e: Exception) {
-                Log.e("CountryRepository", "Error getting user collections: ${e.message}", e)
+                } else null
             }
-        }
+        )
     }
 
     override suspend fun getCountryPosts(
@@ -287,4 +339,9 @@ private fun CountryCollection.toCountryCollectionModel(): CountryCollectionModel
         visitCount = visitCount,
         postsCount = postsCount
     )
+}
+
+private fun isCacheValid(timestamp: Long): Boolean {
+    val cacheExpiryMs = 12 * 60 * 60 * 1000L
+    return (System.currentTimeMillis() - timestamp) < cacheExpiryMs
 }

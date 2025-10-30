@@ -37,11 +37,14 @@ class CommentViewModel @Inject constructor(
 
     fun loadComments(postId: Long) {
         viewModelScope.launch {
+            android.util.Log.d("CommentViewModel", "carregarComentarios: idPostagem=$postId")
             _isLoading.value = true
             _error.value = null
 
             try {
                 val cachedFirst = commentRepository.getCachedCommentsAsList(postId)
+                android.util.Log.d("CommentViewModel", "CACHE: Encontrado ${cachedFirst.size} comentários para postagem $postId")
+
                 if (cachedFirst.isNotEmpty()) {
                     _comments.value = cachedFirst.map { comment ->
                         CommentWithReplies(
@@ -51,11 +54,15 @@ class CommentViewModel @Inject constructor(
                         )
                     }
                     _isLoading.value = false
+                    android.util.Log.d("CommentViewModel", "CACHE: Exibido ${cachedFirst.size} comentários em cache, isLoading=false")
                 }
 
+                android.util.Log.d("CommentViewModel", "Tentando atualizar da API...")
                 commentRepository.refreshPostComments(postId).fold(
                     onSuccess = {
+                        android.util.Log.d("CommentViewModel", "SUCESSO NA ATUALIZAÇÃO DA API")
                         val refreshedComments = commentRepository.getCachedCommentsAsList(postId)
+                        android.util.Log.d("CommentViewModel", "Atualizado: ${refreshedComments.size} comments")
                         _comments.value = refreshedComments.map { comment ->
                             CommentWithReplies(
                                 comment = comment,
@@ -65,14 +72,20 @@ class CommentViewModel @Inject constructor(
                         }
                     },
                     onFailure = { exception ->
+                        android.util.Log.e("CommentViewModel", "FALHA NA ATUALIZAÇÃO DA API: ${exception.message}", exception)
                         if (cachedFirst.isEmpty()) {
+                            android.util.Log.d("CommentViewModel", "Sem cache, definindo erro")
                             _error.value = exception.message
+                        } else {
+                            android.util.Log.d("CommentViewModel", "Tem cache, mantendo comentários em cache")
                         }
                     }
                 )
             } catch (e: Exception) {
+                android.util.Log.e("CommentViewModel", "EXCEÇÃO ao carregar comentários: ${e.message}", e)
                 _error.value = e.message
             } finally {
+                android.util.Log.d("CommentViewModel", "FINALLY: isLoading=false, comments.size=${_comments.value.size}")
                 _isLoading.value = false
             }
         }
@@ -141,15 +154,18 @@ class CommentViewModel @Inject constructor(
 
     fun toggleReplies(commentId: Long, postId: Long) {
         viewModelScope.launch {
+            android.util.Log.d("CommentViewModel", "alternarRespostas: idComentario=$commentId")
             _comments.value = _comments.value.map { commentWithReplies ->
                 if (commentWithReplies.comment.id == commentId) {
                     if (!commentWithReplies.isExpanded) {
                         val replies = commentRepository.getCommentRepliesAsList(commentId)
+                        android.util.Log.d("CommentViewModel", "REPLIES: Encontrado ${replies.size} respostas para comentário $commentId")
                         commentWithReplies.copy(
                             replies = replies,
                             isExpanded = true
                         )
                     } else {
+                        android.util.Log.d("CommentViewModel", "REPLIES: Collapsing respostas para comentário $commentId")
                         commentWithReplies.copy(isExpanded = false)
                     }
                 } else {

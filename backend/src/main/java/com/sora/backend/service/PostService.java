@@ -234,6 +234,21 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Post> getExplorePosts(String timeframe, Pageable pageable) {
+        LocalDateTime cutoffDate = calculateCutoffDate(timeframe);
+        return postRepository.findTrendingPosts(cutoffDate, pageable);
+    }
+
+    private LocalDateTime calculateCutoffDate(String timeframe) {
+        return switch (timeframe.toLowerCase()) {
+            case "week" -> LocalDateTime.now().minusWeeks(1);
+            case "month" -> LocalDateTime.now().minusMonths(1);
+            case "all" -> LocalDateTime.of(2000, 1, 1, 0, 0);
+            default -> LocalDateTime.now().minusWeeks(1);
+        };
+    }
+
+    @Transactional(readOnly = true)
     public List<Post> getRecentPostsByCountry(String countryCode, int daysSince) {
         Country country = countryRepository.findByCode(countryCode).orElseThrow(() -> new ServiceException(MessageUtil.getMessage("country.not.found")));
         LocalDateTime since = LocalDateTime.now().minusDays(daysSince);

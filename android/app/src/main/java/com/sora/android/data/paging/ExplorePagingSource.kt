@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.sora.android.core.network.NetworkMonitor
-import com.sora.android.data.local.TokenManager
 import com.sora.android.data.local.dao.PostDao
 import com.sora.android.data.local.dao.UserDao
 import com.sora.android.data.local.entity.Post
@@ -12,33 +11,54 @@ import com.sora.android.data.local.entity.User
 import com.sora.android.data.remote.ApiService
 import com.sora.android.domain.model.*
 
-class FeedPagingSource(
+class ExplorePagingSource(
     private val apiService: ApiService,
     private val postDao: PostDao,
     private val userDao: UserDao,
-    private val tokenManager: TokenManager,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val timeframe: String
 ) : PagingSource<Int, PostModel>() {
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, PostModel> {
         val page = params.key ?: 0
 
         return try {
-            val currentUserId = tokenManager.getUserId() ?: 1L
-
             if (!networkMonitor.isCurrentlyConnected()) {
-                Log.d("FeedPagingSource", "Offline: loading from cache")
-                val cachedPosts = postDao.getRecentPosts(params.loadSize)
-                    .map { it.toPostModel() }
+                Log.d("ExplorePagingSource", "OFFLINE MODE: timeframe=$timeframe, loading from cache")
+
+                val cachedPosts = when (timeframe) {
+                    "week" -> {
+                        val weekAgo = calculateDateDaysAgo(7)
+                        Log.d("ExplorePagingSource", "Loading posts since $weekAgo (7 days ago)")
+                        postDao.getPostsByRelevanceSince(weekAgo, params.loadSize)
+                    }
+                    "month" -> {
+                        val monthAgo = calculateDateDaysAgo(30)
+                        Log.d("ExplorePagingSource", "Loading posts since $monthAgo (30 days ago)")
+                        postDao.getPostsByRelevanceSince(monthAgo, params.loadSize)
+                    }
+                    else -> {
+                        Log.d("ExplorePagingSource", "Loading all posts by relevance")
+                        postDao.getPostsByRelevance(params.loadSize)
+                    }
+                }
+
+                Log.d("ExplorePagingSource", "CACHE RESULT: Found ${cachedPosts.size} posts")
+
+                val posts = cachedPosts.map { it.toPostModel() }
 
                 return LoadResult.Page(
-                    data = cachedPosts,
+                    data = posts,
                     prevKey = null,
                     nextKey = null
                 )
             }
 
-            val response = apiService.getFeed(page = page, size = params.loadSize)
+            val response = apiService.getExplorePosts(
+                timeframe = timeframe,
+                page = page,
+                size = params.loadSize
+            )
 
             if (response.isSuccessful) {
                 val pagedResponse = response.body()
@@ -71,27 +91,46 @@ class FeedPagingSource(
                     nextKey = if (isLastPage) null else page + 1
                 )
             } else {
-                Log.d("FeedPagingSource", "API failed: fallback to cache")
-                val cachedPosts = postDao.getRecentPosts(params.loadSize)
-                    .map { it.toPostModel() }
+                Log.d("ExplorePagingSource", "API FAILED: fallback to cache with timeframe=$timeframe")
+
+                val cachedPosts = when (timeframe) {
+                    "week" -> postDao.getPostsByRelevanceSince(calculateDateDaysAgo(7), params.loadSize)
+                    "month" -> postDao.getPostsByRelevanceSince(calculateDateDaysAgo(30), params.loadSize)
+                    else -> postDao.getPostsByRelevance(params.loadSize)
+                }
+
+                Log.d("ExplorePagingSource", "CACHE FALLBACK: Found ${cachedPosts.size} posts")
 
                 LoadResult.Page(
-                    data = cachedPosts,
+                    data = cachedPosts.map { it.toPostModel() },
                     prevKey = null,
                     nextKey = null
                 )
             }
         } catch (e: Exception) {
-            Log.d("FeedPagingSource", "Exception: fallback to cache")
-            val cachedPosts = postDao.getRecentPosts(params.loadSize)
-                .map { it.toPostModel() }
+            Log.d("ExplorePagingSource", "EXCEPTION: fallback to cache, error: ${e.message}")
+
+            val cachedPosts = when (timeframe) {
+                "week" -> postDao.getPostsByRelevanceSince(calculateDateDaysAgo(7), params.loadSize)
+                "month" -> postDao.getPostsByRelevanceSince(calculateDateDaysAgo(30), params.loadSize)
+                else -> postDao.getPostsByRelevance(params.loadSize)
+            }
+
+            Log.d("ExplorePagingSource", "EXCEPTION FALLBACK: Found ${cachedPosts.size} posts")
 
             return LoadResult.Page(
-                data = cachedPosts,
+                data = cachedPosts.map { it.toPostModel() },
                 prevKey = null,
                 nextKey = null
             )
         }
+    }
+
+    private fun calculateDateDaysAgo(days: Int): String {
+        val calendar = java.util.Calendar.getInstance()
+        calendar.add(java.util.Calendar.DAY_OF_YEAR, -days)
+        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US)
+        return dateFormat.format(calendar.time)
     }
 
     override fun getRefreshKey(state: PagingState<Int, PostModel>): Int? {

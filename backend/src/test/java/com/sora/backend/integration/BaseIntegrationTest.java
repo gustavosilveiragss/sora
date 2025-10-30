@@ -265,37 +265,6 @@ public abstract class BaseIntegrationTest {
         followRepository.save(followBack);
     }
 
-    protected void createDefaultLikesData() {
-        var allPosts = postRepository.findAll();
-        if (allPosts.size() >= 4) {
-            var user1Posts = allPosts.stream()
-                .filter(post -> post.getAuthor().getId().equals(testUser1.getId()))
-                .limit(2)
-                .toList();
-            
-            for (Post post : user1Posts) {
-                LikePost like = new LikePost();
-                like.setUser(testUser2);
-                like.setPost(post);
-                like.setCreatedAt(java.time.LocalDateTime.now());
-                likePostRepository.save(like);
-            }
-
-            var user2Posts = allPosts.stream()
-                .filter(post -> post.getAuthor().getId().equals(testUser2.getId()))
-                .limit(2)
-                .toList();
-                
-            for (Post post : user2Posts) {
-                LikePost like = new LikePost();
-                like.setUser(testUser1);
-                like.setPost(post);
-                like.setCreatedAt(java.time.LocalDateTime.now());
-                likePostRepository.save(like);
-            }
-        }
-    }
-
     protected String asJsonString(Object obj) throws Exception {
         return objectMapper.writeValueAsString(obj);
     }

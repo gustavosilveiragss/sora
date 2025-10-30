@@ -101,4 +101,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT pm.cloudinaryUrl FROM PostMedia pm JOIN pm.post p WHERE p.profileOwner.id = :userId AND p.country.id = :countryId AND pm.mediaType = 'IMAGE' ORDER BY p.createdAt DESC, pm.sortOrder ASC LIMIT 1")
     String findLatestPostImageUrlByUserAndCountry(@Param("userId") Long userId, @Param("countryId") Long countryId);
+
+    @Query("SELECT p FROM Post p WHERE p.createdAt >= :cutoffDate ORDER BY (SIZE(p.likes) + SIZE(p.comments)) DESC, p.createdAt DESC")
+    Page<Post> findTrendingPosts(@Param("cutoffDate") LocalDateTime cutoffDate, Pageable pageable);
 }

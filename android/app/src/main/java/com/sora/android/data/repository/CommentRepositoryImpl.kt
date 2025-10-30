@@ -29,6 +29,7 @@ class CommentRepositoryImpl @Inject constructor(
     private val commentDao: CommentDao,
     private val userDao: com.sora.android.data.local.dao.UserDao,
     private val tokenManager: TokenManager,
+    private val networkMonitor: com.sora.android.core.network.NetworkMonitor,
     @ApplicationContext private val context: Context
 ) : CommentRepository {
 
@@ -37,26 +38,27 @@ class CommentRepositoryImpl @Inject constructor(
         page: Int,
         size: Int
     ): Flow<PagingData<CommentModel>> {
-        return flow {
-            try {
+        return offlineFirstPaging(
+            tag = "CommentRepository-$postId",
+            networkMonitor = networkMonitor,
+            getCached = {
+                commentDao.getPostCommentsAsList(postId).map { it.toDomainModel() }
+            },
+            fetchFromApi = {
                 val response = apiService.getPostComments(postId, page, size)
                 if (response.isSuccessful) {
-                    response.body()?.content?.let { commentDtos ->
-                        val comments = commentDtos.map { it.toCommentModel() }
+                    response.body()?.content?.also { commentDtos ->
                         val commentEntities = commentDtos.map { it.toCommentEntity(postId) }
-                        val userEntities = commentDtos.map { it.author.toUserEntity() }.distinctBy { it.id }
-
+                        val userEntities = commentDtos.map {
+                            val existing = userDao.getUserById(it.author.id)
+                            it.author.toUserEntity(existing)
+                        }.distinctBy { it.id }
                         userDao.insertUsers(userEntities)
                         commentDao.insertComments(commentEntities)
-                        emit(PagingData.from(comments))
-                    }
-                } else {
-                    emit(PagingData.empty())
-                }
-            } catch (e: Exception) {
-                emit(PagingData.empty())
+                    }?.map { it.toCommentModel() }
+                } else null
             }
-        }
+        )
     }
 
     override suspend fun createComment(postId: Long, content: String): Result<CommentCreateResponse> {
@@ -142,11 +144,57 @@ class CommentRepositoryImpl @Inject constructor(
         size: Int
     ): Flow<PagingData<CommentModel>> {
         return flow {
+            android.util.Log.d("CommentRepository", "getCommentReplies: commentId=$commentId")
+
+            val cachedReplies = commentDao.getCommentReplies(commentId)
+                .map { it.toDomainModel() }
+
+            android.util.Log.d("CommentRepository", "CACHE: Encontrado ${cachedReplies.size} replies")
+
+            val isOffline = !networkMonitor.isCurrentlyConnected()
+
+            if (isOffline) {
+                android.util.Log.d("CommentRepository", "OFFLINE: Emitting cache and stopping")
+                emit(PagingData.from(cachedReplies))
+                return@flow
+            }
+
+            if (cachedReplies.isNotEmpty()) {
+                android.util.Log.d("CommentRepository", "ONLINE + cache: Emitting cache first")
+                emit(PagingData.from(cachedReplies))
+            }
+
             try {
-                val cachedReplies = commentDao.getCommentReplies(commentId)
-                emit(PagingData.from(cachedReplies.map { it.toDomainModel() }))
+                val parentComment = commentDao.getCommentById(commentId)
+                if (parentComment != null) {
+                    val response = apiService.getPostComments(parentComment.postId, 0, 100)
+                    if (response.isSuccessful) {
+                        response.body()?.content?.let { commentDtos ->
+                            val targetComment = commentDtos.find { it.id == commentId }
+                            targetComment?.replies?.let { replyDtos ->
+                                android.util.Log.d("CommentRepository", "SUCESSO DA API: ${replyDtos.size} replies, caching...")
+                                val replies = replyDtos.map { it.toCommentModel() }
+                                val replyEntities = replyDtos.map { it.toCommentEntity(parentComment.postId, commentId) }
+                                val userEntities = replyDtos.map {
+                                    val existing = userDao.getUserById(it.author.id)
+                                    it.author.toUserEntity(existing)
+                                }.distinctBy { it.id }
+
+                                userDao.insertUsers(userEntities)
+                                commentDao.insertComments(replyEntities)
+                                emit(PagingData.from(replies))
+                            }
+                        }
+                    } else if (cachedReplies.isEmpty()) {
+                        android.util.Log.d("CommentRepository", "API FALHOU: ${response.code()}, emitindo empty")
+                        emit(PagingData.empty())
+                    }
+                }
             } catch (e: Exception) {
-                emit(PagingData.empty())
+                android.util.Log.d("CommentRepository", "EXCEPTION: ${e.message}")
+                if (cachedReplies.isEmpty()) {
+                    emit(PagingData.empty())
+                }
             }
         }
     }
@@ -183,20 +231,26 @@ class CommentRepositoryImpl @Inject constructor(
             val response = apiService.getPostComments(postId, 0, 50)
             if (response.isSuccessful) {
                 response.body()?.content?.let { commentDtos ->
-                    val uniqueUsers = mutableSetOf<com.sora.android.data.local.entity.User>()
+                    val uniqueUsers = mutableMapOf<Long, com.sora.android.data.local.entity.User>()
                     val allCommentEntities = mutableListOf<Comment>()
 
                     commentDtos.forEach { commentDto ->
-                        uniqueUsers.add(commentDto.author.toUserEntity())
+                        if (!uniqueUsers.containsKey(commentDto.author.id)) {
+                            val existing = userDao.getUserById(commentDto.author.id)
+                            uniqueUsers[commentDto.author.id] = commentDto.author.toUserEntity(existing)
+                        }
                         allCommentEntities.add(commentDto.toCommentEntity(postId))
 
                         commentDto.replies.forEach { replyDto ->
-                            uniqueUsers.add(replyDto.author.toUserEntity())
+                            if (!uniqueUsers.containsKey(replyDto.author.id)) {
+                                val existing = userDao.getUserById(replyDto.author.id)
+                                uniqueUsers[replyDto.author.id] = replyDto.author.toUserEntity(existing)
+                            }
                             allCommentEntities.add(replyDto.toCommentEntity(postId, commentDto.id))
                         }
                     }
 
-                    userDao.insertUsers(uniqueUsers.toList())
+                    userDao.insertUsers(uniqueUsers.values.toList())
                     commentDao.insertComments(allCommentEntities)
                 }
                 Result.success(Unit)
@@ -312,13 +366,14 @@ private fun Comment.toDomainModel(): CommentModel {
     )
 }
 
-private fun UserSummaryDto.toUserEntity(): User {
+private suspend fun UserSummaryDto.toUserEntity(existingUser: User? = null): User {
     return User(
         id = id,
         username = username,
         firstName = firstName,
         lastName = lastName,
-        profilePicture = profilePicture,
+        bio = bio ?: existingUser?.bio,
+        profilePicture = profilePicture ?: existingUser?.profilePicture,
         cacheTimestamp = System.currentTimeMillis()
     )
 }

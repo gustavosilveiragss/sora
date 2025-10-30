@@ -41,9 +41,12 @@ import androidx.core.net.toUri
 class UserRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val userDao: UserDao,
+    private val userStatsDao: com.sora.android.data.local.dao.UserStatsDao,
+    private val followDao: com.sora.android.data.local.dao.FollowDao,
     private val countryDao: CountryDao,
     private val cityDao: CityDao,
     private val tokenManager: TokenManager,
+    private val networkMonitor: com.sora.android.core.network.NetworkMonitor,
     private val translationManager: TranslationManager,
     @ApplicationContext private val context: Context
 ) : UserRepository {
@@ -51,21 +54,32 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getCurrentUserProfile(): Result<UserModel> {
         return try {
             val currentUserId = getCurrentUserId()
+            Log.d("SORA_USER", "obterPerfilUsuarioAtual: userId=$currentUserId")
+
             val cachedUser = userDao.getUserById(currentUserId)
+            Log.d("SORA_USER", "Usuario em cache: id=${cachedUser?.id}, bio=${cachedUser?.bio}, tamanho=${cachedUser?.bio?.length}")
 
             if (cachedUser != null && isCacheValid(cachedUser.cacheTimestamp)) {
+                Log.d("SORA_USER", "Cache valido, retornando usuario em cache com bio=${cachedUser.bio}")
                 return Result.success(cachedUser.toUserModel())
             }
 
+            Log.d("SORA_USER", "Buscando da API...")
             val response = apiService.getCurrentUserProfile()
             if (response.isSuccessful) {
                 response.body()?.let { profile ->
-                    val userEntity = profile.toUserEntity()
+                    Log.d("SORA_USER", "Resposta da API: bio=${profile.bio}, tamanho=${profile.bio?.length}")
+                    val userEntity = profile.toUserEntity(cachedUser)
+                    Log.d("SORA_USER", "Entidade para salvar: bio=${userEntity.bio}, tamanho=${userEntity.bio?.length}")
+                    Log.d("SORA_USER", "INSERINDO usuario na DB local: id=${userEntity.id}, username=${userEntity.username}")
                     userDao.insertUser(userEntity)
+                    Log.d("SORA_USER", "Usuario inserido com sucesso na DB local")
                     Result.success(userEntity.toUserModel())
                 } ?: Result.failure(Exception(context.getString(R.string.error_empty_response)))
             } else {
+                Log.w("SORA_USER", "API falhou: ${response.code()}")
                 if (cachedUser != null) {
+                    Log.d("SORA_USER", "Retornando ao cache com bio=${cachedUser.bio}")
                     Result.success(cachedUser.toUserModel())
                 } else {
                     val errorMessage = NetworkUtils.parseErrorMessage(response, context)
@@ -73,55 +87,106 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
+            Log.e("SORA_USER", "Excecao ao obter perfil atual: ${e.message}", e)
             Result.failure(e)
         }
     }
 
     override suspend fun getUserTravelStats(userId: Long): Result<TravelStatsModel> {
         return try {
-            Log.d("UserRepository", "=== DATABASE DEBUG ===")
-            debugDatabase()
+            Log.d("SORA_USER", "obterEstatisticasViagemUsuario: userId=$userId")
 
+            val cachedStats = userStatsDao.getUserStats(userId)
+            if (cachedStats != null) {
+                val cacheAge = System.currentTimeMillis() - cachedStats.cacheTimestamp
+                val cacheAgeHours = cacheAge / (60 * 60 * 1000)
+                Log.d("SORA_USER", "CACHE ENCONTRADO: estatisticas para usuario $userId, idade=${cacheAgeHours}h, valido=${isCacheValid(cachedStats.cacheTimestamp)}")
+                Log.d("SORA_USER", "Estatisticas em cache: paises=${cachedStats.totalCountriesVisited}, postagens=${cachedStats.totalPostsCount}")
+
+                if (isCacheValid(cachedStats.cacheTimestamp)) {
+                    Log.d("SORA_USER", "Cache e valido, retornando imediatamente")
+                    return Result.success(cachedStats.toTravelStatsModel())
+                }
+            } else {
+                Log.d("SORA_USER", "SEM CACHE encontrado para usuario $userId")
+            }
+
+            Log.d("SORA_USER", "Tentando chamada API...")
             val response = apiService.getUserTravelStats(userId)
             if (response.isSuccessful) {
                 response.body()?.let { statsResponse ->
-                    Log.d("UserRepository", "Received stats from API - user: ${statsResponse.user.username}")
+                    Log.d("SORA_USER", "SUCESSO DA API: estatisticas recebidas para ${statsResponse.user.username}")
                     val userStats = statsResponse.toUserStatsModel()
+                    Log.d("SORA_USER", "Estatisticas da API: paises=${userStats.travelStats.totalCountriesVisited}, postagens=${userStats.travelStats.totalPostsCount}")
+
+                    val statsEntity = com.sora.android.data.local.entity.CachedUserStats(
+                        userId = userId,
+                        username = statsResponse.user.username,
+                        totalCountriesVisited = userStats.travelStats.totalCountriesVisited,
+                        totalCitiesVisited = userStats.travelStats.totalCitiesVisited,
+                        totalPostsCount = userStats.travelStats.totalPostsCount,
+                        totalLikesReceived = userStats.travelStats.totalLikesReceived,
+                        totalCommentsReceived = userStats.travelStats.totalCommentsReceived,
+                        totalFollowers = userStats.travelStats.totalFollowers,
+                        totalFollowing = userStats.travelStats.totalFollowing,
+                        cacheTimestamp = System.currentTimeMillis()
+                    )
+                    Log.d("SORA_USER", "INSERINDO estatisticas na DB local para usuario $userId")
+                    userStatsDao.insertUserStats(statsEntity)
+                    Log.d("SORA_USER", "Estatisticas inseridas com sucesso na DB local para usuario $userId")
+
                     Result.success(userStats.travelStats)
                 } ?: Result.failure(Exception(context.getString(R.string.error_empty_response)))
             } else {
-                val errorMessage = NetworkUtils.parseErrorMessage(response, context)
-                Result.failure(Exception(errorMessage))
+                Log.d("SORA_USER", "API FALHOU: ${response.code()}")
+                if (cachedStats != null) {
+                    Log.d("SORA_USER", "Retornando ao cached stats mesmo que expiradas")
+                    Result.success(cachedStats.toTravelStatsModel())
+                } else {
+                    val errorMessage = NetworkUtils.parseErrorMessage(response, context)
+                    Log.d("SORA_USER", "Sem cache disponivel, retornando erro")
+                    Result.failure(Exception(errorMessage))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Log.e("SORA_USER", "EXCECAO ao obter estatisticas para usuario $userId: ${e.message}", e)
+            val cachedStats = userStatsDao.getUserStats(userId)
+            if (cachedStats != null) {
+                Log.d("SORA_USER", "Fallback de excecao: returning cached stats")
+                Result.success(cachedStats.toTravelStatsModel())
+            } else {
+                Log.d("SORA_USER", "Excecao e sem cache, retornando falha")
+                Result.failure(e)
+            }
         }
     }
 
     override suspend fun getUserProfile(userId: Long): Flow<UserProfileModel?> {
         return flow {
+            Log.d("SORA_USER", "obterPerfilUsuario: userId=$userId")
+
             val cachedUser = userDao.getUserById(userId)
-            if (cachedUser != null && isCacheValid(cachedUser.cacheTimestamp)) {
-                emit(cachedUser.toUserProfileModel())
-            }
+
+            Log.d("SORA_USER", "CACHE: ${if (cachedUser != null) "Usuario encontrado ${cachedUser.username}" else "Sem cache"}")
+
+            emit(cachedUser?.toUserProfileModel())
 
             try {
                 val response = apiService.getUserById(userId)
                 if (response.isSuccessful) {
                     response.body()?.let { profile ->
-                        val userEntity = profile.toUserEntity()
+                        Log.d("SORA_USER", "SUCESSO DA API: armazenando perfil para ${profile.username}")
+                        val userEntity = profile.toUserEntity(cachedUser)
+                        Log.d("SORA_USER", "INSERINDO usuario na DB local: id=${userEntity.id}, username=${userEntity.username}")
                         userDao.insertUser(userEntity)
+                        Log.d("SORA_USER", "Usuario inserido com sucesso na DB local")
                         emit(profile)
                     }
-                } else if (cachedUser != null) {
-                    emit(cachedUser.toUserProfileModel())
+                } else {
+                    Log.d("SORA_USER", "API FALHOU: ${response.code()}, mantendo cache")
                 }
             } catch (e: Exception) {
-                if (cachedUser != null) {
-                    emit(cachedUser.toUserProfileModel())
-                } else {
-                    emit(null)
-                }
+                Log.d("SORA_USER", "EXCECAO: ${e.message}, mantendo cache")
             }
         }
     }
@@ -146,31 +211,31 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun uploadProfilePicture(imageUri: String): Result<ProfilePictureResponse> {
         return try {
-            Log.d("UserRepository", "Starting upload for URI: $imageUri")
+            Log.d("SORA_USER", "Iniciando upload de foto de perfil para URI: $imageUri")
 
             val uri = imageUri.toUri()
             val body = when (uri.scheme) {
                 "content" -> {
-                    Log.d("UserRepository", "Handling content URI")
+                    Log.d("SORA_USER", "Processando content URI")
                     val inputStream = context.contentResolver.openInputStream(uri)
                         ?: throw Exception("${context.getString(R.string.error_cannot_open_stream)}: $imageUri")
 
                     val bytes = inputStream.readBytes()
                     inputStream.close()
 
-                    Log.d("UserRepository", "Read ${bytes.size} bytes from content URI")
+                    Log.d("SORA_USER", "Lidos ${bytes.size} bytes do content URI")
 
                     val requestBody = bytes.toRequestBody("image/*".toMediaType())
                     MultipartBody.Part.createFormData("file", "profile_image.jpg", requestBody)
                 }
                 "file" -> {
-                    Log.d("UserRepository", "Handling file URI")
+                    Log.d("SORA_USER", "Processando file URI")
                     val file = File(uri.path ?: throw Exception(context.getString(R.string.error_invalid_file_path)))
                     if (!file.exists()) {
                         throw Exception("${context.getString(R.string.error_file_not_exist)}: ${file.absolutePath}")
                     }
 
-                    Log.d("UserRepository", "File exists: ${file.absolutePath}, size: ${file.length()} bytes")
+                    Log.d("SORA_USER", "Arquivo existe: ${file.absolutePath}, tamanho: ${file.length()} bytes")
 
                     val requestFile = file.asRequestBody("image/*".toMediaType())
                     MultipartBody.Part.createFormData("file", file.name, requestFile)
@@ -180,12 +245,12 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
 
-            Log.d("UserRepository", "Making API call to upload profile picture")
+            Log.d("SORA_USER", "Fazendo chamada API para upload de foto de perfil")
             val response = apiService.uploadProfilePicture(body)
 
             if (response.isSuccessful) {
                 response.body()?.let { pictureResponse ->
-                    Log.d("UserRepository", "Upload successful: ${pictureResponse.profilePictureUrl}")
+                    Log.d("SORA_USER", "Upload bem-sucedido: ${pictureResponse.profilePictureUrl}")
 
                     val currentUserId = getCurrentUserId()
                     val cachedUser = userDao.getUserById(currentUserId)
@@ -194,18 +259,20 @@ class UserRepositoryImpl @Inject constructor(
                             profilePicture = pictureResponse.profilePictureUrl,
                             cacheTimestamp = System.currentTimeMillis()
                         )
+                        Log.d("SORA_USER", "ATUALIZANDO foto de perfil na DB local para usuario $currentUserId")
                         userDao.insertUser(updatedUser)
+                        Log.d("SORA_USER", "Foto de perfil atualizada com sucesso na DB local")
                     }
 
                     Result.success(pictureResponse)
                 } ?: Result.failure(Exception(context.getString(R.string.error_empty_response)))
             } else {
-                Log.e("UserRepository", "Upload failed: ${response.code()} - ${response.message()}")
+                Log.e("SORA_USER", "Upload falhou: ${response.code()} - ${response.message()}")
                 val errorMessage = NetworkUtils.parseErrorMessage(response, context)
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            Log.e("UserRepository", "Error uploading profile picture: ${e.message}", e)
+            Log.e("SORA_USER", "Erro ao fazer upload de foto de perfil: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -218,16 +285,80 @@ class UserRepositoryImpl @Inject constructor(
     ): Flow<PagingData<UserSearchResultModel>> {
         return flow {
             try {
+                val cachedUsers = userDao.getAllUsers()
+                    .filter { user ->
+                        user.username.contains(query, ignoreCase = true) ||
+                        user.firstName.contains(query, ignoreCase = true) ||
+                        user.lastName.contains(query, ignoreCase = true)
+                    }
+                    .take(size)
+                    .map { user ->
+                        UserSearchResultModel(
+                            id = user.id,
+                            username = user.username,
+                            firstName = user.firstName,
+                            lastName = user.lastName,
+                            profilePicture = user.profilePicture
+                        )
+                    }
+
+                if (cachedUsers.isNotEmpty()) {
+                    Log.d("SORA_USER", "Cache hit: encontrados ${cachedUsers.size} usuarios correspondentes")
+                    emit(PagingData.from(cachedUsers))
+                }
+
                 val response = apiService.searchUsers(query, countryCode, page, size)
                 if (response.isSuccessful) {
                     response.body()?.let { searchResult ->
+                        Log.d("SORA_USER", "API sucesso: cacheando ${searchResult.content.size} usuarios da busca")
+                        searchResult.content.forEach { userSearchResult ->
+                            val existing = userDao.getUserById(userSearchResult.id)
+                            val userEntity = User(
+                                id = userSearchResult.id,
+                                username = userSearchResult.username,
+                                firstName = userSearchResult.firstName,
+                                lastName = userSearchResult.lastName,
+                                bio = existing?.bio,
+                                profilePicture = userSearchResult.profilePicture ?: existing?.profilePicture,
+                                followersCount = existing?.followersCount ?: 0,
+                                followingCount = existing?.followingCount ?: 0,
+                                countriesVisitedCount = existing?.countriesVisitedCount ?: 0,
+                                cacheTimestamp = System.currentTimeMillis()
+                            )
+                            Log.d("SORA_USER", "INSERINDO usuario da busca na DB local: id=${userEntity.id}, username=${userEntity.username}")
+                            userDao.insertUser(userEntity)
+                        }
+                        Log.d("SORA_USER", "Todos usuarios da busca inseridos na DB local")
                         emit(PagingData.from(searchResult.content))
                     }
-                } else {
+                } else if (cachedUsers.isEmpty()) {
+                    Log.d("SORA_USER", "API falhou e sem cache")
                     emit(PagingData.empty())
                 }
             } catch (e: Exception) {
-                emit(PagingData.empty())
+                Log.d("SORA_USER", "Excecao: fallback para cache na busca")
+                val cachedUsers = userDao.getAllUsers()
+                    .filter { user ->
+                        user.username.contains(query, ignoreCase = true) ||
+                        user.firstName.contains(query, ignoreCase = true) ||
+                        user.lastName.contains(query, ignoreCase = true)
+                    }
+                    .take(size)
+                    .map { user ->
+                        UserSearchResultModel(
+                            id = user.id,
+                            username = user.username,
+                            firstName = user.firstName,
+                            lastName = user.lastName,
+                            profilePicture = user.profilePicture
+                        )
+                    }
+
+                if (cachedUsers.isNotEmpty()) {
+                    emit(PagingData.from(cachedUsers))
+                } else {
+                    emit(PagingData.empty())
+                }
             }
         }
     }
@@ -263,37 +394,75 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUserFollowers(userId: Long, page: Int, size: Int): Flow<PagingData<UserModel>> {
-        return flow {
-            try {
+        return offlineFirstPaging(
+            tag = "UserRepository-Followers",
+            networkMonitor = networkMonitor,
+            getCached = {
+                followDao.getUserFollowers(userId).mapNotNull { follow ->
+                    userDao.getUserById(follow.followerId)?.toUserModel()
+                }
+            },
+            fetchFromApi = {
                 val response = apiService.getUserFollowers(userId, page, size)
                 if (response.isSuccessful) {
-                    response.body()?.content?.let { followers ->
-                        emit(PagingData.from(followers))
+                    response.body()?.content?.also { followers ->
+                        followers.forEach { follower ->
+                            val existing = userDao.getUserById(follower.id)
+                            val userEntity = User(
+                                id = follower.id,
+                                username = follower.username,
+                                firstName = follower.firstName,
+                                lastName = follower.lastName,
+                                bio = follower.bio ?: existing?.bio,
+                                profilePicture = follower.profilePicture ?: existing?.profilePicture,
+                                followersCount = follower.followersCount ?: 0,
+                                followingCount = follower.followingCount ?: 0,
+                                countriesVisitedCount = follower.countriesVisitedCount ?: 0,
+                                cacheTimestamp = System.currentTimeMillis()
+                            )
+                            Log.d("SORA_USER", "INSERINDO usuario seguidor na DB local: id=${userEntity.id}, username=${userEntity.username}")
+                            userDao.insertUser(userEntity)
+                        }
                     }
-                } else {
-                    emit(PagingData.empty())
-                }
-            } catch (e: Exception) {
-                emit(PagingData.empty())
+                } else null
             }
-        }
+        )
     }
 
     override suspend fun getUserFollowing(userId: Long, page: Int, size: Int): Flow<PagingData<UserModel>> {
-        return flow {
-            try {
+        return offlineFirstPaging(
+            tag = "UserRepository-Following",
+            networkMonitor = networkMonitor,
+            getCached = {
+                followDao.getUserFollowing(userId).mapNotNull { follow ->
+                    userDao.getUserById(follow.followingId)?.toUserModel()
+                }
+            },
+            fetchFromApi = {
                 val response = apiService.getUserFollowing(userId, page, size)
                 if (response.isSuccessful) {
-                    response.body()?.content?.let { following ->
-                        emit(PagingData.from(following))
+                    response.body()?.content?.also { following ->
+                        following.forEach { user ->
+                            val existing = userDao.getUserById(user.id)
+                            val userEntity = User(
+                                id = user.id,
+                                username = user.username,
+                                firstName = user.firstName,
+                                lastName = user.lastName,
+                                bio = user.bio ?: existing?.bio,
+                                profilePicture = user.profilePicture ?: existing?.profilePicture,
+                                followersCount = user.followersCount ?: 0,
+                                followingCount = user.followingCount ?: 0,
+                                countriesVisitedCount = user.countriesVisitedCount ?: 0,
+                                cacheTimestamp = System.currentTimeMillis()
+                            )
+                            Log.d("SORA_USER", "INSERINDO usuario seguindo na DB local: id=${userEntity.id}, username=${userEntity.username}")
+                            userDao.insertUser(userEntity)
+                        }
                     }
-                } else {
-                    emit(PagingData.empty())
-                }
-            } catch (e: Exception) {
-                emit(PagingData.empty())
+                } else null
             }
-        }
+        )
     }
 
     override suspend fun getCachedUser(userId: Long): Flow<UserModel?> {
@@ -348,15 +517,15 @@ class UserRepositoryImpl @Inject constructor(
             val response = apiService.getRecentDestinations(userId, limit)
             if (response.isSuccessful) {
                 response.body()?.let { recentDestResponse ->
-                    Log.d("UserRepository", "Recent destinations response: username=${recentDestResponse.username}, count=${recentDestResponse.recentDestinations.size}")
+                    Log.d("SORA_USER", "Destinos recentes: username=${recentDestResponse.username}, count=${recentDestResponse.recentDestinations.size}")
                     val destinations = recentDestResponse.recentDestinations.map { destDto ->
-                        Log.d("UserRepository", "Processing destination: country=${destDto.country.nameKey}, city=${destDto.lastCityVisited}")
+                        Log.d("SORA_USER", "Processando destino: country=${destDto.country.nameKey}, city=${destDto.lastCityVisited}")
 
                         val countryEntity = destDto.country.toCountryEntity()
                         try {
                             countryDao.insertCountry(countryEntity)
                         } catch (e: Exception) {
-                            Log.w("UserRepository", "Country already exists or insert failed: ${e.message}")
+                            Log.w("SORA_USER", "Pais ja existe ou insert falhou: ${e.message}")
                         }
 
                         if (destDto.lastCityVisited.isNotBlank()) {
@@ -373,7 +542,7 @@ class UserRepositoryImpl @Inject constructor(
                             try {
                                 cityDao.insertCity(cityEntity)
                             } catch (e: Exception) {
-                                Log.w("UserRepository", "City insert failed: ${e.message}")
+                                Log.w("SORA_USER", "Insert de cidade falhou: ${e.message}")
                             }
                         }
 
@@ -386,36 +555,147 @@ class UserRepositoryImpl @Inject constructor(
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            Log.e("UserRepository", "Error getting recent destinations: ${e.message}", e)
+            Log.e("SORA_USER", "Erro ao obter destinos recentes: ${e.message}", e)
             Result.failure(e)
         }
     }
 
     override suspend fun getUserFollowersList(userId: Long, page: Int, size: Int): Result<List<UserModel>> {
         return try {
+            val cachedFollows = followDao.getUserFollowers(userId)
+            val cachedFollowerIds = cachedFollows.map { it.followerId }
+
+            if (cachedFollowerIds.isNotEmpty() && cachedFollows.all { isCacheValid(it.cacheTimestamp) }) {
+                val cachedUsers = cachedFollowerIds.mapNotNull { userDao.getUserById(it) }
+                if (cachedUsers.size == cachedFollowerIds.size) {
+                    Log.d("SORA_USER", "Cache hit: retornando ${cachedUsers.size} seguidores")
+                    return Result.success(cachedUsers.map { it.toUserModel() })
+                }
+            }
+
             val response = apiService.getUserFollowers(userId, page, size)
             if (response.isSuccessful) {
                 val followers = response.body()?.content ?: emptyList()
+                Log.d("SORA_USER", "API sucesso: recebidos ${followers.size} seguidores")
+
+                followers.forEach { follower ->
+                    val userEntity = User(
+                        id = follower.id,
+                        username = follower.username,
+                        firstName = follower.firstName,
+                        lastName = follower.lastName,
+                        bio = follower.bio,
+                        profilePicture = follower.profilePicture,
+                        followersCount = follower.followersCount,
+                        followingCount = follower.followingCount,
+                        countriesVisitedCount = follower.countriesVisitedCount,
+                        cacheTimestamp = System.currentTimeMillis()
+                    )
+                    Log.d("SORA_USER", "INSERINDO seguidor na DB local: id=${userEntity.id}, username=${userEntity.username}")
+                    userDao.insertUser(userEntity)
+
+                    val followEntity = com.sora.android.data.local.entity.Follow(
+                        id = generateFollowId(follower.id, userId),
+                        followerId = follower.id,
+                        followingId = userId,
+                        createdAt = "",
+                        cacheTimestamp = System.currentTimeMillis()
+                    )
+                    followDao.insertFollow(followEntity)
+                }
+
+                Log.d("SORA_USER", "Cacheados ${followers.size} seguidores com sucesso")
                 Result.success(followers)
             } else {
-                Result.failure(Exception(context.getString(R.string.unknown_error)))
+                if (cachedFollowerIds.isNotEmpty()) {
+                    val cachedUsers = cachedFollowerIds.mapNotNull { userDao.getUserById(it) }
+                    Log.d("SORA_USER", "API falhou: fallback para ${cachedUsers.size} seguidores em cache")
+                    Result.success(cachedUsers.map { it.toUserModel() })
+                } else {
+                    Result.failure(Exception(context.getString(R.string.unknown_error)))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Log.e("SORA_USER", "Excecao ao obter seguidores: ${e.message}", e)
+            val cachedFollows = followDao.getUserFollowers(userId)
+            if (cachedFollows.isNotEmpty()) {
+                val cachedUsers = cachedFollows.mapNotNull { userDao.getUserById(it.followerId) }
+                Log.d("SORA_USER", "Excecao: fallback para ${cachedUsers.size} seguidores em cache")
+                Result.success(cachedUsers.map { it.toUserModel() })
+            } else {
+                Result.failure(e)
+            }
         }
     }
 
     override suspend fun getUserFollowingList(userId: Long, page: Int, size: Int): Result<List<UserModel>> {
         return try {
+            Log.d("SORA_USER", "Obtendo usuarios seguidos por usuario $userId")
+
+            val cachedFollows = followDao.getUserFollowing(userId)
+            val cachedFollowingIds = cachedFollows.map { it.followingId }
+
+            if (cachedFollowingIds.isNotEmpty() && cachedFollows.all { isCacheValid(it.cacheTimestamp) }) {
+                val cachedUsers = cachedFollowingIds.mapNotNull { userDao.getUserById(it) }
+                if (cachedUsers.size == cachedFollowingIds.size) {
+                    Log.d("SORA_USER", "Cache hit: retornando ${cachedUsers.size} usuarios seguidos")
+                    return Result.success(cachedUsers.map { it.toUserModel() })
+                }
+            }
+
             val response = apiService.getUserFollowing(userId, page, size)
             if (response.isSuccessful) {
                 val following = response.body()?.content ?: emptyList()
+                Log.d("SORA_USER", "API sucesso: recebidos ${following.size} usuarios seguidos")
+
+                following.forEach { followedUser ->
+                    val userEntity = User(
+                        id = followedUser.id,
+                        username = followedUser.username,
+                        firstName = followedUser.firstName,
+                        lastName = followedUser.lastName,
+                        bio = followedUser.bio,
+                        profilePicture = followedUser.profilePicture,
+                        followersCount = followedUser.followersCount,
+                        followingCount = followedUser.followingCount,
+                        countriesVisitedCount = followedUser.countriesVisitedCount,
+                        cacheTimestamp = System.currentTimeMillis()
+                    )
+                    Log.d("SORA_USER", "INSERINDO usuario seguido na DB local: id=${userEntity.id}, username=${userEntity.username}")
+                    userDao.insertUser(userEntity)
+
+                    val followEntity = com.sora.android.data.local.entity.Follow(
+                        id = generateFollowId(userId, followedUser.id),
+                        followerId = userId,
+                        followingId = followedUser.id,
+                        createdAt = "",
+                        cacheTimestamp = System.currentTimeMillis()
+                    )
+                    followDao.insertFollow(followEntity)
+                }
+
+                Log.d("SORA_USER", "Cacheados ${following.size} usuarios seguidos com sucesso")
                 Result.success(following)
             } else {
-                Result.failure(Exception(context.getString(R.string.unknown_error)))
+                if (cachedFollowingIds.isNotEmpty()) {
+                    val cachedUsers = cachedFollowingIds.mapNotNull { userDao.getUserById(it) }
+                    Log.d("SORA_USER", "API falhou: fallback para ${cachedUsers.size} usuarios seguidos em cache")
+                    Result.success(cachedUsers.map { it.toUserModel() })
+                } else {
+                    Log.e("SORA_USER", "API falhou sem cache disponivel")
+                    Result.failure(Exception(context.getString(R.string.unknown_error)))
+                }
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Log.e("SORA_USER", "Excecao ao obter usuarios seguidos: ${e.message}", e)
+            val cachedFollows = followDao.getUserFollowing(userId)
+            if (cachedFollows.isNotEmpty()) {
+                val cachedUsers = cachedFollows.mapNotNull { userDao.getUserById(it.followingId) }
+                Log.d("SORA_USER", "Excecao: fallback para ${cachedUsers.size} usuarios seguidos em cache")
+                Result.success(cachedUsers.map { it.toUserModel() })
+            } else {
+                Result.failure(e)
+            }
         }
     }
 
@@ -423,23 +703,9 @@ class UserRepositoryImpl @Inject constructor(
         return tokenManager.getUserId() ?: 1L
     }
 
-    private suspend fun debugDatabase() {
-        try {
-            val userCount = userDao.getAllUsers().size
-            Log.d("UserRepository", "DATABASE STATUS:")
-            Log.d("UserRepository", "- Users in database: $userCount")
-
-            if (userCount > 0) {
-                val users = userDao.getAllUsers().take(3)
-                users.forEach { user ->
-                    Log.d("UserRepository", "- User: ${user.username} (ID: ${user.id}) - cached: ${System.currentTimeMillis() - user.cacheTimestamp}ms ago")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("UserRepository", "Error reading database: ${e.message}", e)
-        }
+    private fun generateFollowId(followerId: Long, followingId: Long): Long {
+        return (followerId.toString() + followingId.toString()).hashCode().toLong()
     }
-
 }
 
 private fun isCacheValid(timestamp: Long): Boolean {
@@ -447,14 +713,14 @@ private fun isCacheValid(timestamp: Long): Boolean {
     return (System.currentTimeMillis() - timestamp) < cacheExpiryMs
 }
 
-private fun UserProfileModel.toUserEntity(): User {
+private fun UserProfileModel.toUserEntity(existingUser: User? = null): User {
     return User(
         id = id,
         username = username,
         firstName = firstName,
         lastName = lastName,
-        bio = bio,
-        profilePicture = profilePicture,
+        bio = bio ?: existingUser?.bio,
+        profilePicture = profilePicture ?: existingUser?.profilePicture,
         followersCount = followersCount,
         followingCount = followingCount,
         countriesVisitedCount = countriesVisitedCount,
@@ -508,6 +774,18 @@ private fun CountryDto.toCountryEntity(): Country {
         latitude = latitude,
         longitude = longitude,
         cacheTimestamp = System.currentTimeMillis()
+    )
+}
+
+private fun com.sora.android.data.local.entity.CachedUserStats.toTravelStatsModel(): TravelStatsModel {
+    return TravelStatsModel(
+        totalCountriesVisited = totalCountriesVisited,
+        totalCitiesVisited = totalCitiesVisited,
+        totalPostsCount = totalPostsCount,
+        totalLikesReceived = totalLikesReceived,
+        totalCommentsReceived = totalCommentsReceived,
+        totalFollowers = totalFollowers,
+        totalFollowing = totalFollowing
     )
 }
 

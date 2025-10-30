@@ -3,27 +3,36 @@ package com.sora.android.ui.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.sora.android.R
 import com.sora.android.data.local.TokenManager
 import com.sora.android.data.remote.ApiService
 import com.sora.android.data.repository.SocialRepositoryImpl
+import com.sora.android.domain.model.PostModel
 import com.sora.android.domain.model.UserSearchResultModel
+import com.sora.android.domain.repository.PostRepository
+import com.sora.android.domain.repository.SocialRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ExploreViewModel @Inject constructor(
     private val apiService: ApiService,
-    private val socialRepository: SocialRepositoryImpl,
+    private val postRepository: PostRepository,
+    private val socialRepository: SocialRepository,
     private val tokenManager: TokenManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -35,11 +44,25 @@ class ExploreViewModel @Inject constructor(
         val searchQuery: String = "",
         val hasSearched: Boolean = false,
         val followingUserIds: Set<Long> = emptySet(),
-        val currentUserId: Long? = null
+        val currentUserId: Long? = null,
+        val selectedTimeframe: String = "week"
     )
 
     private val _uiState = MutableStateFlow(ExploreUiState())
     val uiState: StateFlow<ExploreUiState> = _uiState.asStateFlow()
+
+    private val _likeModifications = MutableStateFlow<Map<Long, LikeModification>>(emptyMap())
+    val likeModifications: StateFlow<Map<Long, LikeModification>> = _likeModifications.asStateFlow()
+
+    private val _refreshTrigger = MutableStateFlow(0)
+
+    val explorePosts: Flow<PagingData<PostModel>> = _refreshTrigger.flatMapLatest {
+        postRepository.getExplorePosts(
+            timeframe = _uiState.value.selectedTimeframe,
+            page = 0,
+            size = 20
+        )
+    }.cachedIn(viewModelScope)
 
     private val _searchQuery = MutableStateFlow("")
 
@@ -187,5 +210,37 @@ class ExploreViewModel @Inject constructor(
         if (_uiState.value.searchQuery.trim().length >= 2) {
             performSearch(_uiState.value.searchQuery.trim())
         }
+    }
+
+    fun setTimeframe(timeframe: String) {
+        _uiState.value = _uiState.value.copy(selectedTimeframe = timeframe)
+        _refreshTrigger.value++
+    }
+
+    fun toggleLike(postId: Long, currentlyLiked: Boolean, currentLikesCount: Int) {
+        val newIsLiked = !currentlyLiked
+        val newLikesCount = if (newIsLiked) currentLikesCount + 1 else maxOf(0, currentLikesCount - 1)
+
+        _likeModifications.update { modifications ->
+            modifications + (postId to LikeModification(newIsLiked, newLikesCount))
+        }
+
+        viewModelScope.launch {
+            val result = if (newIsLiked) {
+                socialRepository.likePost(postId)
+            } else {
+                socialRepository.unlikePost(postId)
+            }
+
+            result.onFailure {
+                _likeModifications.update { modifications ->
+                    modifications + (postId to LikeModification(currentlyLiked, currentLikesCount))
+                }
+            }
+        }
+    }
+
+    fun refreshExplore() {
+        _refreshTrigger.value++
     }
 }

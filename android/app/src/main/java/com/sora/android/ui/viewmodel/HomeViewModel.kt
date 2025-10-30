@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.sora.android.data.local.TokenManager
 import com.sora.android.domain.model.PostModel
 import com.sora.android.domain.repository.PostRepository
 import com.sora.android.domain.repository.SocialRepository
@@ -21,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val postRepository: PostRepository,
-    private val socialRepository: SocialRepository
+    private val socialRepository: SocialRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -33,11 +35,25 @@ class HomeViewModel @Inject constructor(
     private val _likeModifications = MutableStateFlow<Map<Long, LikeModification>>(emptyMap())
     val likeModifications: StateFlow<Map<Long, LikeModification>> = _likeModifications.asStateFlow()
 
+    private val _currentUserId = MutableStateFlow<Long?>(null)
+    val currentUserId: StateFlow<Long?> = _currentUserId.asStateFlow()
+
     private val _refreshTrigger = MutableStateFlow(0)
 
     val feedPosts: Flow<PagingData<PostModel>> = _refreshTrigger.flatMapLatest {
         postRepository.getFeed(page = 0, size = 20)
     }.cachedIn(viewModelScope)
+
+    init {
+        loadCurrentUserId()
+    }
+
+    private fun loadCurrentUserId() {
+        viewModelScope.launch {
+            val userId = tokenManager.getUserId()
+            _currentUserId.value = userId
+        }
+    }
 
     fun refreshFeed() {
         _refreshTrigger.value++

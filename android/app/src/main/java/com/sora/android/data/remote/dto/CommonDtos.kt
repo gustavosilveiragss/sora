@@ -171,6 +171,7 @@ data class UserSummaryDto(
     val username: String,
     val firstName: String,
     val lastName: String,
+    val bio: String? = null,
     val profilePicture: String? = null,
     val countriesVisitedCount: Int? = null,
     val isFollowedByCurrentUser: Boolean? = null

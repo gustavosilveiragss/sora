@@ -464,4 +464,12 @@
     <string name="dismiss">Dismiss</string>
     <string name="try_again">Try again</string>
 
+    <string name="explore_trending">Trending</string>
+    <string name="explore_timeframe_week">Week</string>
+    <string name="explore_timeframe_month">Month</string>
+    <string name="explore_timeframe_all">All</string>
+    <string name="explore_empty_title">No featured posts</string>
+    <string name="explore_empty_message">There are no trending posts at the moment</string>
+    <string name="error_loading_explore">Error loading trending posts</string>
+
 </resources>

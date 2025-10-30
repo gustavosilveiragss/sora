@@ -14,8 +14,23 @@ interface PostDao {
     @Query("SELECT * FROM post WHERE profileOwnerId IN (SELECT followingId FROM follow WHERE followerId = :userId) OR authorId = :userId ORDER BY createdAt DESC")
     fun getFeedPosts(userId: Long): PagingSource<Int, Post>
 
-    @Query("SELECT * FROM post ORDER BY cacheTimestamp DESC LIMIT :limit")
+    @Query("SELECT * FROM post ORDER BY createdAt DESC LIMIT :limit")
     suspend fun getRecentPosts(limit: Int): List<Post>
+
+    @Query("SELECT * FROM post ORDER BY (likesCount * 2 + commentsCount) DESC, createdAt DESC LIMIT :limit")
+    suspend fun getPostsByRelevance(limit: Int): List<Post>
+
+    @Query("SELECT * FROM post WHERE createdAt >= :sinceDate ORDER BY (likesCount * 2 + commentsCount) DESC, createdAt DESC LIMIT :limit")
+    suspend fun getPostsByRelevanceSince(sinceDate: String, limit: Int): List<Post>
+
+    @Query("SELECT * FROM post WHERE countryCode = :countryCode AND profileOwnerId = :userId ORDER BY createdAt DESC")
+    suspend fun getCountryPostsList(countryCode: String, userId: Long): List<Post>
+
+    @Query("SELECT * FROM post WHERE countryCode = :countryCode AND profileOwnerId = :userId AND collectionCode = :collectionCode ORDER BY createdAt DESC")
+    suspend fun getCountryCollectionPostsList(countryCode: String, userId: Long, collectionCode: String): List<Post>
+
+    @Query("SELECT * FROM post WHERE countryCode = :countryCode AND profileOwnerId = :userId AND cityName = :cityName ORDER BY createdAt DESC")
+    suspend fun getCityPostsList(countryCode: String, userId: Long, cityName: String): List<Post>
 
     @Query("SELECT * FROM post WHERE id = :postId")
     suspend fun getPostById(postId: Long): Post?

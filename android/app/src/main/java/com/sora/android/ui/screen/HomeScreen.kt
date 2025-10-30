@@ -24,13 +24,14 @@ import com.sora.android.ui.viewmodel.HomeViewModel
 
 @Composable
 fun HomeScreen(
+    modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
     onNavigateToProfile: (Long) -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     val posts = viewModel.feedPosts.collectAsLazyPagingItems()
     val error by viewModel.error.collectAsState()
     val likeModifications by viewModel.likeModifications.collectAsState()
+    val currentUserId by viewModel.currentUserId.collectAsState()
     var showGlobe by remember { mutableStateOf(true) }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -175,10 +176,11 @@ fun HomeScreen(
                                     likesCount = displayLikesCount,
                                     commentsCount = post.commentsCount,
                                     isLiked = displayLiked,
-                                    timestamp = post.createdAt.toString(),
+                                    timestamp = post.createdAt,
                                     cityName = post.cityName,
                                     countryName = countryName,
-                                    isOwnPost = false,
+                                    isOwnPost = currentUserId != null && post.author.id == currentUserId,
+                                    currentUserId = currentUserId,
                                     onProfileClick = { onNavigateToProfile(post.author.id) },
                                     onLikeClick = {
                                         viewModel.toggleLike(

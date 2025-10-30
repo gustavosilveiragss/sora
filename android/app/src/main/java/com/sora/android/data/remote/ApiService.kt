@@ -118,6 +118,13 @@ interface ApiService {
         @Query("size") size: Int = 20
     ): Response<PagedResponse<PostModel>>
 
+    @GET("posts/explore")
+    suspend fun getExplorePosts(
+        @Query("timeframe") timeframe: String = "week",
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): Response<PagedResponse<PostModel>>
+
     // Likes
     @POST("posts/{id}/like")
     suspend fun likePost(@Path("id") postId: Long): Response<LikeCreateResponse>

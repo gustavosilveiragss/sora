@@ -23,6 +23,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -140,10 +141,21 @@ public class PostController {
     public ResponseEntity<Page<PostResponseDto>> getFeed(@Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page, @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size, Authentication authentication) {
         UserAccount currentUser = getCurrentUser(authentication);
         List<Long> followedUserIds = followRepository.findFollowingUserIds(currentUser.getId());
-        List<Long> allUserIds = new java.util.ArrayList<>(followedUserIds);
+        List<Long> allUserIds = new ArrayList<>(followedUserIds);
         allUserIds.add(currentUser.getId());
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Post> posts = postService.getFeedPosts(allUserIds, pageable);
+        Page<PostResponseDto> response = posts.map(post -> mapToPostResponseDto(post, currentUser));
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/explore")
+    @Operation(summary = "Get explore trending posts", description = "Get paginated trending posts from all users ordered by engagement")
+    @ApiResponse(responseCode = "200", description = "Explore posts retrieved successfully")
+    public ResponseEntity<Page<PostResponseDto>> getExplorePosts(@Parameter(description = "Timeframe filter") @RequestParam(defaultValue = "week") String timeframe, @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page, @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size, Authentication authentication) {
+        UserAccount currentUser = getCurrentUser(authentication);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Post> posts = postService.getExplorePosts(timeframe, pageable);
         Page<PostResponseDto> response = posts.map(post -> mapToPostResponseDto(post, currentUser));
         return ResponseEntity.ok(response);
     }

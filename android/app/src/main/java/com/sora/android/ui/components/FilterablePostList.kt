@@ -70,14 +70,20 @@ fun FilterablePostList(
             }
         }
 
+        val isInitialLoading = !postsLoaded && posts.loadState.refresh is LoadState.Loading
+
+        android.util.Log.d("FilterablePostList", "ESTADO DE RENDERIZAÇÃO: postsLoaded=$postsLoaded, itemCount=${posts.itemCount}, refreshState=${posts.loadState.refresh}, appendState=${posts.loadState.append}")
+
         when {
-            !postsLoaded -> {
+            isInitialLoading -> {
+                android.util.Log.d("FilterablePostList", "MOSTRANDO CARREGAMENTO")
                 items(3) {
                     PostLoadingShimmer()
                 }
             }
 
             posts.loadState.refresh is LoadState.Error -> {
+                android.util.Log.d("FilterablePostList", "MOSTRANDO ESTADO DE ERRO")
                 item {
                     PostListErrorState(
                         onRetry = { posts.retry() }
@@ -85,7 +91,8 @@ fun FilterablePostList(
                 }
             }
 
-            posts.itemCount == 0 -> {
+            posts.itemCount == 0 && posts.loadState.refresh is LoadState.NotLoading -> {
+                android.util.Log.d("FilterablePostList", "MOSTRANDO ESTADO VAZIO")
                 item {
                     PostListEmptyState(
                         hasFilter = filters.collectionCode != null
@@ -94,6 +101,7 @@ fun FilterablePostList(
             }
 
             else -> {
+                android.util.Log.d("FilterablePostList", "MOSTRANDO ${posts.itemCount} POSTS")
                 items(
                     count = posts.itemCount,
                     key = posts.itemKey { it.id },

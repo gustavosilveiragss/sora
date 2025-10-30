@@ -24,6 +24,7 @@ import javax.inject.Singleton
 class PostRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val postDao: PostDao,
+    private val userDao: com.sora.android.data.local.dao.UserDao,
     private val tokenManager: TokenManager,
     private val networkMonitor: com.sora.android.core.network.NetworkMonitor,
     @ApplicationContext private val context: Context
@@ -114,25 +115,61 @@ class PostRepositoryImpl @Inject constructor(
                 prefetchDistance = 3
             ),
             pagingSourceFactory = {
-                com.sora.android.data.paging.FeedPagingSource(apiService)
+                com.sora.android.data.paging.FeedPagingSource(
+                    apiService = apiService,
+                    postDao = postDao,
+                    userDao = userDao,
+                    tokenManager = tokenManager,
+                    networkMonitor = networkMonitor
+                )
+            }
+        ).flow
+    }
+
+    override suspend fun getExplorePosts(timeframe: String, page: Int, size: Int): Flow<PagingData<PostModel>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = size,
+                enablePlaceholders = false,
+                prefetchDistance = 3
+            ),
+            pagingSourceFactory = {
+                com.sora.android.data.paging.ExplorePagingSource(
+                    apiService = apiService,
+                    postDao = postDao,
+                    userDao = userDao,
+                    networkMonitor = networkMonitor,
+                    timeframe = timeframe
+                )
             }
         ).flow
     }
 
     override suspend fun getUserPosts(userId: Long, page: Int, size: Int): Flow<PagingData<PostModel>> {
         return flow {
-            android.util.Log.d("PostRepository", "getUserPosts called for userId: $userId")
-            val cachedPosts = postDao.getRecentPosts(size).filter { it.authorId == userId }
+            android.util.Log.d("PostRepository", "getUserPosts: userId=$userId")
 
-            if (cachedPosts.isNotEmpty()) {
-                android.util.Log.d("PostRepository", "Emitting ${cachedPosts.size} cached posts")
+            val cachedPosts = postDao.getRecentPosts(200)
+                .filter { it.profileOwnerId == userId || it.authorId == userId }
+                .sortedByDescending { it.createdAt }
+
+            android.util.Log.d("PostRepository", "CACHE: Encontrado ${cachedPosts.size} user posts")
+
+            if (!networkMonitor.isCurrentlyConnected()) {
+                android.util.Log.d("PostRepository", "OFFLINE: Emitting ${cachedPosts.size} posts and stopping")
+                emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
+                return@flow
+            }
+
+            val cacheIsValid = cachedPosts.isNotEmpty() && isCacheValid(cachedPosts.first().cacheTimestamp)
+            if (cacheIsValid) {
+                android.util.Log.d("PostRepository", "ONLINE + Valid cache: Emitting ${cachedPosts.size} posts first")
                 emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
             }
 
             try {
                 android.util.Log.d("PostRepository", "Fetching country collections from API...")
                 val countriesResponse = apiService.getUserCountryCollections(userId)
-                android.util.Log.d("PostRepository", "Country collections response: ${countriesResponse.code()}")
                 if (countriesResponse.isSuccessful) {
                     countriesResponse.body()?.let { countryCollections ->
                         android.util.Log.d("PostRepository", "User has ${countryCollections.countries.size} countries")
@@ -148,27 +185,29 @@ class PostRepositoryImpl @Inject constructor(
                             if (postsResponse.isSuccessful) {
                                 postsResponse.body()?.posts?.content?.let { posts ->
                                     allPosts.addAll(posts)
-                                    val postEntities = posts.map { it.toPostEntity() }
-                                    postEntities.forEach { postDao.insertPost(it) }
+                                    postDao.insertPosts(posts.map { it.toPostEntity() })
                                 }
                             }
                         }
 
                         if (allPosts.isNotEmpty()) {
-                            android.util.Log.d("PostRepository", "Emitting ${allPosts.size} posts from API")
-                            emit(PagingData.from(allPosts))
-                        } else if (cachedPosts.isEmpty()) {
-                            android.util.Log.d("PostRepository", "No posts found, emitting empty")
+                            android.util.Log.d("PostRepository", "SUCESSO DA API: ${allPosts.size} posts")
+                            emit(PagingData.from(allPosts.sortedByDescending { it.createdAt }))
+                        } else if (!cacheIsValid && cachedPosts.isEmpty()) {
                             emit(PagingData.empty())
                         }
                     }
+                } else if (!cacheIsValid && cachedPosts.isNotEmpty()) {
+                    android.util.Log.d("PostRepository", "API FALHOU: Using expired cache")
+                    emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
                 } else if (cachedPosts.isEmpty()) {
-                    android.util.Log.w("PostRepository", "API error and no cache, emitting empty")
                     emit(PagingData.empty())
                 }
             } catch (e: Exception) {
-                android.util.Log.e("PostRepository", "Error loading posts", e)
-                if (cachedPosts.isEmpty()) {
+                android.util.Log.e("PostRepository", "EXCEPTION: ${e.message}")
+                if (!cacheIsValid && cachedPosts.isNotEmpty()) {
+                    emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
+                } else if (cachedPosts.isEmpty()) {
                     emit(PagingData.empty())
                 }
             }
@@ -185,57 +224,41 @@ class PostRepositoryImpl @Inject constructor(
         sortBy: String,
         sortDirection: String
     ): Flow<PagingData<PostModel>> {
-        return flow {
-            val cachedPosts = postDao.getRecentPosts(50)
-                .filter { it.countryCode == countryCode && it.profileOwnerId == userId }
-                .let { posts ->
-                    if (collectionCode != null) {
-                        posts.filter { it.collectionCode == collectionCode }
-                    } else posts
-                }
-                .let { posts ->
-                    if (cityName != null) {
-                        posts.filter { it.cityName == cityName }
-                    } else posts
-                }
+        val tag = "PostRepository-Country-$countryCode"
+        android.util.Log.d(tag, "INÍCIO getCountryPosts: userId=$userId, collection=$collectionCode, city=$cityName")
 
-            if (cachedPosts.isNotEmpty() && isCacheValid(cachedPosts.first().cacheTimestamp)) {
-                emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
-            }
-
-            if (!networkMonitor.isCurrentlyConnected()) {
-                if (cachedPosts.isNotEmpty()) {
-                    emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
-                } else {
-                    emit(PagingData.empty())
+        return offlineFirstPaging(
+            tag = tag,
+            networkMonitor = networkMonitor,
+            getCached = {
+                val cached = when {
+                    cityName != null -> postDao.getCityPostsList(countryCode, userId, cityName)
+                    collectionCode != null -> postDao.getCountryCollectionPostsList(countryCode, userId, collectionCode)
+                    else -> postDao.getCountryPostsList(countryCode, userId)
                 }
-                return@flow
-            }
-
-            try {
+                android.util.Log.d(tag, "CONSULTA CACHE CONCLUÍDA: Encontrado ${cached.size} posts, convertendo...")
+                val result = cached.map { it.toPostModel() }
+                android.util.Log.d(tag, "CACHE CONVERTIDO: ${result.size} PostModels prontos")
+                result
+            },
+            fetchFromApi = {
+                android.util.Log.d(tag, "API CALL STARTING...")
                 val response = apiService.getCountryPosts(
                     userId, countryCode, collectionCode, cityName, page, size, sortBy, sortDirection
                 )
+                android.util.Log.d(tag, "API RESPONSE CODE: ${response.code()}")
                 if (response.isSuccessful) {
-                    val posts = response.body()?.posts?.content ?: emptyList()
-                    if (posts.isNotEmpty()) {
-                        val postEntities = posts.map { it.toPostEntity() }
-                        postEntities.forEach { postDao.insertPost(it) }
+                    response.body()?.posts?.content?.also { posts ->
+                        android.util.Log.d(tag, "SUCESSO DA API: Got ${posts.size} posts, caching...")
+                        postDao.insertPosts(posts.map { it.toPostEntity() })
+                        android.util.Log.d(tag, "CACHE INSERT DONE")
                     }
-                    emit(PagingData.from(posts))
-                } else if (cachedPosts.isNotEmpty()) {
-                    emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
                 } else {
-                    emit(PagingData.empty())
-                }
-            } catch (e: Exception) {
-                if (cachedPosts.isNotEmpty()) {
-                    emit(PagingData.from(cachedPosts.map { it.toPostModel() }))
-                } else {
-                    emit(PagingData.empty())
+                    android.util.Log.w(tag, "API FALHOU: ${response.code()}")
+                    null
                 }
             }
-        }
+        )
     }
 
     override suspend fun getSharedPostGroup(groupId: String): Flow<List<PostModel>> {

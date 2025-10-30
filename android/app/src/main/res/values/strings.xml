@@ -453,4 +453,12 @@
     <string name="dismiss">Dispensar</string>
     <string name="try_again">Tentar novamente</string>
 
+    <string name="explore_trending">Tendências</string>
+    <string name="explore_timeframe_week">Semana</string>
+    <string name="explore_timeframe_month">Mês</string>
+    <string name="explore_timeframe_all">Tudo</string>
+    <string name="explore_empty_title">Nenhuma publicação em destaque</string>
+    <string name="explore_empty_message">Não há publicações em tendência neste momento</string>
+    <string name="error_loading_explore">Erro ao carregar tendências</string>
+
 </resources>
