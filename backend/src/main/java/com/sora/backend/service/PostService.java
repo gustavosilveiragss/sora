@@ -94,7 +94,6 @@ public class PostService {
                 createdPosts.add(collaboratorPost);
             }
         } else {
-            validatePersonalPostPermission(author, country);
             Post personalPost = createSinglePost(author, author, country, collection, cityName, cityLatitude, cityLongitude, caption, PostVisibilityType.PERSONAL, null);
             createdPosts.add(personalPost);
         }
@@ -103,7 +102,7 @@ public class PostService {
     }
 
     private Post createSinglePost(UserAccount author, UserAccount profileOwner, Country country, Collection collection, String cityName, Double cityLatitude, Double cityLongitude, String caption, PostVisibilityType visibilityType, String sharedPostGroupId) {
-        
+
         Post post = new Post();
         post.setAuthor(author);
         post.setProfileOwner(profileOwner);
@@ -118,12 +117,6 @@ public class PostService {
         post.setCreatedAt(LocalDateTime.now());
         post.setUpdatedAt(LocalDateTime.now());
         return postRepository.save(post);
-    }
-
-    private void validatePersonalPostPermission(UserAccount author, Country country) {
-        boolean hasVisited = postRepository.existsByProfileOwnerIdAndCountryId(author.getId(), country.getId());
-        boolean hasPermission = travelPermissionRepository.existsByGranteeIdAndCountryIdAndStatus(author.getId(), country.getId(), TravelPermissionStatus.ACTIVE);
-        if (!hasVisited && !hasPermission) throw new ServiceException(MessageUtil.getMessage("post.permission.required"));
     }
 
     private void validateCollaborationPermission(UserAccount author, UserAccount collaborator, Country country) {

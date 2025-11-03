@@ -59,4 +59,16 @@ abstract class RepositoryModule {
     abstract fun bindSocialRepository(
         socialRepositoryImpl: SocialRepositoryImpl
     ): SocialRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRepository(
+        notificationRepositoryImpl: NotificationRepositoryImpl
+    ): NotificationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindLocationRepository(
+        locationRepositoryImpl: LocationRepositoryImpl
+    ): LocationRepository
 }

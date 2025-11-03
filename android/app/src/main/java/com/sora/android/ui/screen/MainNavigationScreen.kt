@@ -1,5 +1,6 @@
 package com.sora.android.ui.screen
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -7,9 +8,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,46 +25,76 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.sora.android.R
+import com.sora.android.core.util.CameraManager
+import com.sora.android.core.util.PermissionManager
 import com.sora.android.ui.components.SoraBottomNavigationBar
 import com.sora.android.ui.navigation.SoraScreens
 import com.sora.android.ui.screen.profile.EditProfileScreen
 import com.sora.android.ui.screen.profile.ProfileScreen
 import com.sora.android.ui.screen.profile.TravelStatsScreen
 import com.sora.android.ui.screen.settings.SettingsScreen
+import com.sora.android.ui.screens.createpost.CreatePostBottomSheet
+import com.sora.android.ui.viewmodel.NotificationViewModel
+import com.sora.android.ui.viewmodel.ProfileViewModel
 
 @Composable
 fun MainNavigationScreen(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    notificationViewModel: NotificationViewModel = hiltViewModel(),
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    val notificationUiState by notificationViewModel.uiState.collectAsState()
+    val userProfile by profileViewModel.userProfile.collectAsState()
+
+    LaunchedEffect(notificationUiState.unreadCount) {
+        Log.d("SORA_MAIN_NAV", "Contador de notificacoes atualizado: ${notificationUiState.unreadCount}")
+    }
+
+    val cameraManager = remember { CameraManager() }
+    val permissionManager = remember { PermissionManager() }
+
+    var showCreatePostBottomSheet by remember { mutableStateOf(false) }
+    var feedRefreshTrigger by remember { mutableStateOf(0) }
 
     Scaffold(
         bottomBar = {
             SoraBottomNavigationBar(
                 currentRoute = currentRoute,
                 onNavigate = { route ->
-                    navController.navigate(route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                    if (route == SoraScreens.CreatePost.route) {
+                        showCreatePostBottomSheet = true
+                    } else {
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
-                }
+                },
+                unreadNotificationsCount = notificationUiState.unreadCount,
+                profilePictureUrl = userProfile?.profilePicture
             )
         }
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = SoraScreens.MainGlobe.route,
+            startDestination = SoraScreens.Feed.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(SoraScreens.MainGlobe.route) {
-                HomeScreen(
+            composable(SoraScreens.Feed.route) {
+                FeedScreen(
                     onNavigateToProfile = { userId ->
                         navController.navigate(SoraScreens.UserProfile.createRoute(userId))
-                    }
+                    },
+                    onNavigateToPost = { postId ->
+                        navController.navigate(SoraScreens.PostDetails.createRoute(postId))
+                    },
+                    refreshTrigger = feedRefreshTrigger
                 )
             }
 
@@ -71,6 +108,12 @@ fun MainNavigationScreen(
 
             composable(SoraScreens.CreatePost.route) {
                 PlaceholderScreen(title = stringResource(R.string.create_post))
+            }
+
+            composable(SoraScreens.Notifications.route) {
+                NotificationsScreen(
+                    viewModel = notificationViewModel
+                )
             }
             composable(SoraScreens.Profile.route) {
                 ProfileScreen(
@@ -195,6 +238,20 @@ fun MainNavigationScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
+        }
+
+        if (showCreatePostBottomSheet) {
+            CreatePostBottomSheet(
+                onDismiss = {
+                    showCreatePostBottomSheet = false
+                },
+                onPostCreated = {
+                    showCreatePostBottomSheet = false
+                    feedRefreshTrigger++
+                },
+                cameraManager = cameraManager,
+                permissionManager = permissionManager
+            )
         }
     }
 }

@@ -46,10 +46,6 @@ public class LikeCommentService {
 
         LikeComment savedLike = likeCommentRepository.save(like);
 
-        if (comment.getAuthor() != null && !comment.getAuthor().getId().equals(user.getId())) {
-            notificationService.createCommentLikedNotification(comment.getAuthor(), user, comment);
-        }
-
         return savedLike;
     }
 

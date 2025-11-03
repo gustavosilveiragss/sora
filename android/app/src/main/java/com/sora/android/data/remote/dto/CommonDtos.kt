@@ -68,13 +68,24 @@ data class CountryPostsResponse(
 
 @Serializable
 data class NotificationsResponse(
-    val notifications: PagedResponse<NotificationModel>
+    val unreadCount: Long,
+    val notifications: List<NotificationModel>,
+    val currentPage: Int,
+    val totalPages: Int,
+    val totalElements: Long
 )
 
 @Serializable
 data class NotificationMarkReadResponse(
-    val notification: NotificationModel,
+    val notification: NotificationReadUpdate,
     val message: String
+)
+
+@Serializable
+data class NotificationReadUpdate(
+    val id: Long,
+    val isRead: Boolean,
+    val readAt: String? = null
 )
 
 @Serializable
@@ -85,7 +96,7 @@ data class MarkAllReadResponse(
 
 @Serializable
 data class UnreadCountResponse(
-    val unreadCount: Int
+    val count: Long
 )
 
 @Serializable

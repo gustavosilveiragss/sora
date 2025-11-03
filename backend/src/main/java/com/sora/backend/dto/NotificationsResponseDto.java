@@ -1,8 +1,11 @@
 package com.sora.backend.dto;
 
-import org.springframework.data.domain.Page;
+import java.util.List;
 
 public record NotificationsResponseDto(
-    Integer unreadCount,
-    Page<NotificationResponseDto> notifications
+    Long unreadCount,
+    List<NotificationResponseDto> notifications,
+    Integer currentPage,
+    Integer totalPages,
+    Long totalElements
 ) {}

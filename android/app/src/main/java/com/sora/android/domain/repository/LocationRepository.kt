@@ -19,7 +19,7 @@ interface LocationRepository {
         countryCode: String,
         query: String,
         limit: Int = 10
-    ): Flow<List<CityModel>>
+    ): Flow<List<SearchLocationModel>>
 
     suspend fun getPopularDestinations(
         limit: Int = 10,

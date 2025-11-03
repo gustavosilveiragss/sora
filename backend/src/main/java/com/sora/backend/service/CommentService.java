@@ -43,7 +43,7 @@ public class CommentService {
         Comment savedComment = commentRepository.save(comment);
 
         if (post.getAuthor() != null && !post.getAuthor().getId().equals(author.getId())) {
-            notificationService.createPostCommentedNotification(post.getAuthor(), author, post);
+            notificationService.createCommentNotification(post.getAuthor(), author, post, savedComment);
         }
 
         return savedComment;
@@ -67,13 +67,13 @@ public class CommentService {
         Comment savedReply = commentRepository.save(reply);
 
         if (!parentComment.getAuthor().getId().equals(author.getId())) {
-            notificationService.createPostCommentedNotification(parentComment.getAuthor(), author, parentComment.getPost());
+            notificationService.createCommentReplyNotification(parentComment.getAuthor(), author, parentComment.getPost(), savedReply);
         }
 
         if (parentComment.getPost().getAuthor() != null
                 && !parentComment.getPost().getAuthor().getId().equals(author.getId())
                 && !parentComment.getPost().getAuthor().getId().equals(parentComment.getAuthor().getId())) {
-            notificationService.createPostCommentedNotification(parentComment.getPost().getAuthor(), author, parentComment.getPost());
+            notificationService.createCommentNotification(parentComment.getPost().getAuthor(), author, parentComment.getPost(), savedReply);
         }
 
         return savedReply;

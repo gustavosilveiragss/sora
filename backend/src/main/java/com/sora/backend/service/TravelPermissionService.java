@@ -68,7 +68,6 @@ public class TravelPermissionService {
             existing.setRespondedAt(null);
             
             TravelPermission savedPermission = travelPermissionRepository.save(existing);
-            notificationService.createTravelPermissionInvitation(grantee, grantor, country, savedPermission.getId());
             return savedPermission;
         } else {
             TravelPermission permission = new TravelPermission();
@@ -80,7 +79,6 @@ public class TravelPermissionService {
             permission.setCreatedAt(LocalDateTime.now());
             
             TravelPermission savedPermission = travelPermissionRepository.save(permission);
-            notificationService.createTravelPermissionInvitation(grantee, grantor, country, savedPermission.getId());
             return savedPermission;
         }
     }
@@ -101,7 +99,6 @@ public class TravelPermissionService {
         permission.setRespondedAt(LocalDateTime.now());
         
         TravelPermission savedPermission = travelPermissionRepository.save(permission);
-        notificationService.createTravelPermissionAccepted(permission.getGrantor(), grantee, permission.getCountry());
         return savedPermission;
     }
 
@@ -121,7 +118,6 @@ public class TravelPermissionService {
         permission.setRespondedAt(LocalDateTime.now());
         
         TravelPermission savedPermission = travelPermissionRepository.save(permission);
-        notificationService.createTravelPermissionDeclined(permission.getGrantor(), grantee, permission.getCountry());
         return savedPermission;
     }
 
@@ -141,7 +137,6 @@ public class TravelPermissionService {
         permission.setRespondedAt(LocalDateTime.now());
         
         TravelPermission savedPermission = travelPermissionRepository.save(permission);
-        notificationService.createTravelPermissionRevoked(permission.getGrantee(), grantor, permission.getCountry());
         return savedPermission;
     }
 

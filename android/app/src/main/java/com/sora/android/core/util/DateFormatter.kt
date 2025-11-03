@@ -8,6 +8,7 @@ object DateFormatter {
     private val ISO_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
     private val DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault())
     private val DISPLAY_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.getDefault())
+    private val DISPLAY_SHORT_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM HH:mm", Locale.getDefault())
 
     fun formatApiDateToDisplay(apiDateString: String?): String {
         return try {
@@ -29,6 +30,19 @@ object DateFormatter {
             } else {
                 val localDateTime = LocalDateTime.parse(apiDateString, ISO_DATE_TIME_FORMATTER)
                 localDateTime.format(DISPLAY_DATE_TIME_FORMATTER)
+            }
+        } catch (e: Exception) {
+            apiDateString ?: ""
+        }
+    }
+
+    fun formatApiDateTimeToShortDisplay(apiDateString: String?): String {
+        return try {
+            if (apiDateString.isNullOrBlank()) {
+                ""
+            } else {
+                val localDateTime = LocalDateTime.parse(apiDateString, ISO_DATE_TIME_FORMATTER)
+                localDateTime.format(DISPLAY_SHORT_DATE_TIME_FORMATTER)
             }
         } catch (e: Exception) {
             apiDateString ?: ""

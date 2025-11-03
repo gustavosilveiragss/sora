@@ -17,6 +17,8 @@ import com.sora.android.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -291,8 +293,36 @@ class PostRepositoryImpl @Inject constructor(
 
     override suspend fun uploadPostMedia(postId: Long, imageUris: List<String>): Result<MediaUploadResponse> {
         return try {
-            Result.failure(Exception(context.getString(R.string.error_media_upload_not_implemented)))
+            android.util.Log.d("SORA_POST", "Iniciando upload de ${imageUris.size} imagens para post $postId")
+
+            val parts = imageUris.mapIndexed { index, uriString ->
+                val uri = android.net.Uri.parse(uriString)
+                val inputStream = context.contentResolver.openInputStream(uri)
+                    ?: throw Exception(context.getString(R.string.error_cannot_open_stream))
+
+                val fileName = "image_${index}_${System.currentTimeMillis()}.jpg"
+                val requestBody = inputStream.readBytes().toRequestBody(
+                    "image/*".toMediaTypeOrNull()
+                )
+
+                okhttp3.MultipartBody.Part.createFormData("files", fileName, requestBody)
+            }.toTypedArray()
+
+            android.util.Log.d("SORA_POST", "Enviando ${parts.size} partes multipart para API")
+            val response = apiService.uploadPostMedia(postId, parts)
+
+            if (response.isSuccessful) {
+                response.body()?.let { uploadResponse ->
+                    android.util.Log.d("SORA_POST", "Upload concluido: ${uploadResponse.media.size} medias uploaded")
+                    Result.success(uploadResponse)
+                } ?: Result.failure(Exception(context.getString(R.string.error_empty_response)))
+            } else {
+                val errorMessage = NetworkUtils.parseErrorMessage(response, context)
+                android.util.Log.e("SORA_POST", "Upload falhou: $errorMessage")
+                Result.failure(Exception(errorMessage))
+            }
         } catch (e: Exception) {
+            android.util.Log.e("SORA_POST", "Excecao no upload: ${e.message}", e)
             Result.failure(e)
         }
     }

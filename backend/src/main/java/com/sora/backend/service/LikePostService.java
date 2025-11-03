@@ -47,7 +47,7 @@ public class LikePostService {
         LikePost savedLike = likePostRepository.save(like);
 
         if (post.getAuthor() != null && !post.getAuthor().getId().equals(user.getId())) {
-            notificationService.createPostLikedNotification(post.getAuthor(), user, post);
+            notificationService.createLikeNotification(post.getAuthor(), user, post);
         }
 
         return savedLike;

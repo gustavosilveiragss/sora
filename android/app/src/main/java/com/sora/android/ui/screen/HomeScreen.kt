@@ -27,12 +27,19 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
     onNavigateToProfile: (Long) -> Unit = {},
+    refreshTrigger: Int = 0
 ) {
     val posts = viewModel.feedPosts.collectAsLazyPagingItems()
     val error by viewModel.error.collectAsState()
     val likeModifications by viewModel.likeModifications.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
     var showGlobe by remember { mutableStateOf(true) }
+
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            posts.refresh()
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(

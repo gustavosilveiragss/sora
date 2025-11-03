@@ -24,11 +24,16 @@ import androidx.room.PrimaryKey
 data class Notification(
     @PrimaryKey val id: Long,
     val recipientId: Long,
-    val type: String, // NEW_FOLLOWER, POST_LIKED, POST_COMMENTED, TRAVEL_PERMISSION_INVITATION, etc.
-    val title: String,
-    val message: String,
-    val referenceId: String? = null,
-    val referenceType: String? = null,
+    val type: String,
+    val triggerUserId: Long? = null,
+    val triggerUserUsername: String? = null,
+    val triggerUserFirstName: String? = null,
+    val triggerUserLastName: String? = null,
+    val triggerUserProfilePicture: String? = null,
+    val postId: Long? = null,
+    val postCityName: String? = null,
+    val postThumbnailUrl: String? = null,
+    val commentPreview: String? = null,
     val isRead: Boolean = false,
     val createdAt: String,
     val cacheTimestamp: Long = System.currentTimeMillis()

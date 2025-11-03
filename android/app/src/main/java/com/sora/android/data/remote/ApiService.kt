@@ -294,7 +294,7 @@ interface ApiService {
         @Path("countryCode") countryCode: String,
         @Query("q") query: String,
         @Query("limit") limit: Int = 10
-    ): Response<List<CityModel>>
+    ): Response<LocationSearchResultModel>
 
     @GET("locations/popular")
     suspend fun getPopularDestinations(
