@@ -1,6 +1,5 @@
 package com.sora.android.ui.components.globe
 
-import com.sora.android.domain.model.CountryMarkerModel
 import com.sora.android.domain.model.GlobeDataModel
 
 fun GlobeDataModel.toGlobeDisplayData(): GlobeDisplayData {
@@ -39,22 +38,5 @@ fun GlobeDataModel.toGlobeDisplayData(): GlobeDisplayData {
     return GlobeDisplayData(
         markers = markers,
         countries = countries
-    )
-}
-
-fun CountryMarkerModel.toGlobeMarker(postIndex: Int = 0): GlobeMarker? {
-    val post = recentPosts.getOrNull(postIndex) ?: return null
-    val lat = post.cityLatitude ?: latitude ?: return null
-    val lon = post.cityLongitude ?: longitude ?: return null
-
-    return GlobeMarker(
-        id = "post-${post.id}",
-        latitude = lat,
-        longitude = lon,
-        countryCode = countryCode,
-        cityName = post.cityName,
-        metadata = mapOf(
-            "postId" to post.id
-        )
     )
 }
