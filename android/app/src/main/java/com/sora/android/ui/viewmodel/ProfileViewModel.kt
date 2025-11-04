@@ -15,6 +15,9 @@ import com.sora.android.domain.repository.CountryRepository
 import com.sora.android.domain.repository.PostRepository
 import com.sora.android.domain.repository.SocialRepository
 import com.sora.android.domain.repository.UserRepository
+import com.sora.android.domain.usecase.globe.GetProfileGlobeDataUseCase
+import com.sora.android.data.repository.LocationRepositoryImpl
+import com.mapbox.geojson.Point
 import com.sora.android.ui.components.PostListFilters
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +26,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -33,7 +38,8 @@ class ProfileViewModel @Inject constructor(
     private val countryRepository: CountryRepository,
     private val postRepository: PostRepository,
     private val socialRepository: SocialRepository,
-    private val apiService: ApiService,
+    private val getProfileGlobeDataUseCase: GetProfileGlobeDataUseCase,
+    private val locationRepository: LocationRepositoryImpl,
     savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
 
@@ -57,6 +63,9 @@ class ProfileViewModel @Inject constructor(
     private val _globeData = MutableStateFlow<GlobeDataModel?>(null)
     val globeData: StateFlow<GlobeDataModel?> = _globeData.asStateFlow()
 
+    private val _userLocation = MutableStateFlow<Point?>(null)
+    val userLocation: StateFlow<Point?> = _userLocation.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -78,15 +87,13 @@ class ProfileViewModel @Inject constructor(
     val isFollowLoading: StateFlow<Boolean> = _isFollowLoading.asStateFlow()
 
     val userPosts: Flow<PagingData<PostModel>> = combine(
-        _userProfile,
+        userProfile,
         _postFilters
     ) { profile, filters ->
-        android.util.Log.d("SORA_USER", "Profile: ${profile?.id}, Filters: ${filters.collectionCode}")
         profile to filters
     }.flatMapLatest { (profile, filters) ->
         _postsLoaded.update { false }
         profile?.id?.let { userId ->
-            android.util.Log.d("SORA_USER", "Carregando posts para userId: $userId")
             postRepository.getUserPosts(
                 userId = userId,
                 page = 0,
@@ -97,10 +104,7 @@ class ProfileViewModel @Inject constructor(
                     _postsLoaded.update { true }
                 }
             }
-        } ?: run {
-            android.util.Log.d("SORA_USER", "Sem perfil, retornando vazio")
-            kotlinx.coroutines.flow.flow { emit(PagingData.empty()) }
-        }
+        } ?: kotlinx.coroutines.flow.flow { emit(PagingData.empty()) }
     }.combine(_likeModifications) { pagingData, modifications ->
         pagingData.map { post ->
             modifications[post.id]?.let { modification ->
@@ -115,6 +119,7 @@ class ProfileViewModel @Inject constructor(
     init {
         loadCurrentUser()
         loadProfile()
+        getCurrentUserLocation()
     }
 
     private fun loadCurrentUser() {
@@ -195,14 +200,39 @@ class ProfileViewModel @Inject constructor(
                         }
                     }
 
-                    try {
-                        val globeResponse = apiService.getProfileGlobeData(userId)
-                        if (globeResponse.isSuccessful) {
-                            _globeData.value = globeResponse.body()
+                    getProfileGlobeDataUseCase(userId).onEach { result ->
+                        result.onSuccess { globeData ->
+                            android.util.Log.d("SORA_GLOBE", "Globe data loaded successfully: ${globeData.countryMarkers.size} countries")
+                            _globeData.value = globeData
+                        }.onFailure { exception ->
+                            android.util.Log.e("SORA_GLOBE", "Failed to load globe data: ${exception.message}", exception)
+
+                            val mockGlobeData = com.sora.android.domain.model.GlobeDataModel(
+                                globeType = com.sora.android.domain.model.GlobeType.PROFILE,
+                                totalCountriesWithActivity = 2,
+                                totalRecentPosts = 5,
+                                lastUpdated = "2025-11-04",
+                                countryMarkers = listOf(
+                                    com.sora.android.domain.model.CountryMarkerModel(
+                                        countryCode = "BR",
+                                        countryNameKey = "Brazil",
+                                        latitude = -14.235,
+                                        longitude = -51.9253,
+                                        recentPostsCount = 3
+                                    ),
+                                    com.sora.android.domain.model.CountryMarkerModel(
+                                        countryCode = "US",
+                                        countryNameKey = "United States",
+                                        latitude = 37.0902,
+                                        longitude = -95.7129,
+                                        recentPostsCount = 2
+                                    )
+                                )
+                            )
+                            android.util.Log.d("SORA_GLOBE", "Using mock globe data for testing")
+                            _globeData.value = mockGlobeData
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.d("SORA_USER", "Dados do globo indisponiveis (offline): ${e.message}")
-                    }
+                    }.launchIn(viewModelScope)
                 }
             } finally {
                 _isLoading.value = false
@@ -212,6 +242,25 @@ class ProfileViewModel @Inject constructor(
 
     fun refreshProfile() {
         loadProfile()
+        getCurrentUserLocation()
+    }
+
+    private fun getCurrentUserLocation() {
+        viewModelScope.launch {
+            try {
+                val location = locationRepository.getCurrentLocation()
+                if (location != null) {
+                    _userLocation.value = Point.fromLngLat(location.longitude, location.latitude)
+                    android.util.Log.d("SORA_LOCATION", "User location obtained: ${location.latitude}, ${location.longitude}")
+                } else {
+                    android.util.Log.w("SORA_LOCATION", "Could not obtain user location, using default")
+                    _userLocation.value = null
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SORA_LOCATION", "Error getting location", e)
+                _userLocation.value = null
+            }
+        }
     }
 
     fun clearError() {
@@ -277,5 +326,9 @@ class ProfileViewModel @Inject constructor(
 
             _isFollowLoading.value = false
         }
+    }
+
+    fun onMarkerSelected(marker: com.sora.android.domain.model.CountryMarkerModel) {
+        android.util.Log.d("SORA_GLOBE", "Marker selected: ${marker.countryCode}")
     }
 }

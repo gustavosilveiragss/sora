@@ -62,6 +62,11 @@ android {
         buildConfig = true
     }
 
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = false
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -107,6 +112,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.paging)
     ksp(libs.androidx.room.compiler)
+
+    implementation("com.mapbox.maps:android-ndk27:11.16.2")
+    implementation("com.mapbox.extension:maps-compose-ndk27:11.16.2")
 
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)

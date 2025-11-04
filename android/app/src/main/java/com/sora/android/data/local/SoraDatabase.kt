@@ -25,9 +25,11 @@ import com.sora.android.data.local.entity.*
         TravelPermission::class,
         Notification::class,
         PostMedia::class,
-        CachedUserStats::class
+        CachedUserStats::class,
+        ProfileGlobeDataEntity::class,
+        ProfileCountryMarkerEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(StringListConverter::class)
@@ -46,6 +48,7 @@ abstract class SoraDatabase : RoomDatabase() {
     abstract fun postMediaDao(): PostMediaDao
     abstract fun draftPostDao(): DraftPostDao
     abstract fun userStatsDao(): UserStatsDao
+    abstract fun globeDao(): GlobeDao
 
     companion object {
         const val DATABASE_NAME = "sora_database"

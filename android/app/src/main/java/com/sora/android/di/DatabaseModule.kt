@@ -87,6 +87,11 @@ object DatabaseModule {
     }
 
     @Provides
+    fun provideGlobeDao(database: SoraDatabase): GlobeDao {
+        return database.globeDao()
+    }
+
+    @Provides
     @Singleton
     fun provideDatabaseDebugger(database: SoraDatabase): DatabaseDebugger {
         return DatabaseDebugger(database)

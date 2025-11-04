@@ -258,6 +258,8 @@ public class GlobeService {
                 post.getId(),
                 mapToUserSummaryDto(post.getAuthor()),
                 post.getCityName(),
+                post.getCityLatitude(),
+                post.getCityLongitude(),
                 thumbnailUrl,
                 (int) likePostService.getPostLikesCount(post.getId()),
                 post.getCreatedAt()

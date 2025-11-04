@@ -40,6 +40,8 @@ data class GlobePostModel(
     val id: Long,
     val author: UserModel,
     val cityName: String,
+    val cityLatitude: Double? = null,
+    val cityLongitude: Double? = null,
     val thumbnailUrl: String? = null,
     val likesCount: Int = 0,
     val commentsCount: Int = 0,

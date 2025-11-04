@@ -152,6 +152,8 @@ public class NotificationController {
                     p.getId(),
                     authorDto,
                     p.getCityName(),
+                    p.getCityLatitude(),
+                    p.getCityLongitude(),
                     thumbnailUrl,
                     p.getLikesCount(),
                     p.getCreatedAt()
