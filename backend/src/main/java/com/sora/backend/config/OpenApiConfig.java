@@ -19,7 +19,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("SORA Backend API")
                         .version("1.0.0")
-                        .description("Country Collections Social Network for Digital Nomads")
+                        .description("REDE SOCIAL PARA NOMADES DIGITAIS")
                         .contact(new Contact()
                                 .name("SORA Team")
                                 .email("contato@sora.com")
