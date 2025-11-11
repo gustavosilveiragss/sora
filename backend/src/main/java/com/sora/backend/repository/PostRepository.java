@@ -23,7 +23,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     
     @Query("SELECT p FROM Post p WHERE p.profileOwner.id = :profileOwnerId AND p.country.id = :countryId ORDER BY p.createdAt DESC")
     Page<Post> findByProfileOwnerIdAndCountryIdOrderByCreatedAtDesc(@Param("profileOwnerId") Long profileOwnerId, @Param("countryId") Long countryId, Pageable pageable);
-    
+
+    @Query("SELECT p FROM Post p WHERE p.profileOwner.id = :profileOwnerId AND p.country.id = :countryId ORDER BY p.createdAt DESC")
+    List<Post> findAllByProfileOwnerIdAndCountryIdOrderByCreatedAtDesc(@Param("profileOwnerId") Long profileOwnerId, @Param("countryId") Long countryId);
+
     @Query("SELECT p FROM Post p WHERE p.profileOwner.id = :profileOwnerId AND p.country.id = :countryId AND p.collection.id = :collectionId ORDER BY p.createdAt DESC")
     Page<Post> findByProfileOwnerIdAndCountryIdAndCollectionIdOrderByCreatedAtDesc(@Param("profileOwnerId") Long profileOwnerId, @Param("countryId") Long countryId, @Param("collectionId") Long collectionId, Pageable pageable);
     

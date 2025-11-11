@@ -555,6 +555,10 @@ class CreatePostViewModel @Inject constructor(
                         uploadResult.fold(
                             onSuccess = { uploadResponse ->
                                 Log.d("SORA_CREATE_POST", "Upload concluido: ${uploadResponse.media.size} medias")
+
+                                Log.d("SORA_CREATE_POST", "Invalidando cache de posts...")
+                                postRepository.invalidateAllPostsCache()
+
                                 _state.update {
                                     it.copy(
                                         uploadProgress = 1f,

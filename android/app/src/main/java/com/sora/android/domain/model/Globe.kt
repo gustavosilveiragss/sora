@@ -24,6 +24,7 @@ data class CountryMarkerModel(
     val longitude: Double? = null,
     val recentPostsCount: Int,
     val lastPostDate: String? = null,
+    val intensity: Double? = null,
     val activeUsers: List<UserModel> = emptyList(),
     val recentPosts: List<GlobePostModel> = emptyList()
 )

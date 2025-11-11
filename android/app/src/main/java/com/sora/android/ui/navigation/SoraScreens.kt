@@ -43,8 +43,13 @@ sealed class SoraScreens(val route: String) {
         fun createRoute(countryCode: String) = "country_details/$countryCode"
     }
 
-    data object CountryCollection : SoraScreens("country_collection/{userId}/{countryCode}") {
-        fun createRoute(userId: Long, countryCode: String) = "country_collection/$userId/$countryCode"
+    data object CountryCollection : SoraScreens("country_collection/{userId}/{countryCode}?timeframe={timeframe}&sortBy={sortBy}") {
+        fun createRoute(
+            userId: Long,
+            countryCode: String,
+            timeframe: String = "month",
+            sortBy: String = "createdAt"
+        ) = "country_collection/$userId/$countryCode?timeframe=$timeframe&sortBy=$sortBy"
     }
 
     data object PostDetails : SoraScreens("post_details/{postId}") {

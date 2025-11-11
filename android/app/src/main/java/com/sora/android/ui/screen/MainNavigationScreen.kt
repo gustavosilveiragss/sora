@@ -94,6 +94,9 @@ fun MainNavigationScreen(
                     onNavigateToPost = { postId ->
                         navController.navigate(SoraScreens.PostDetails.createRoute(postId))
                     },
+                    onNavigateToCountryCollection = { userId, countryCode, timeframe, sortBy ->
+                        navController.navigate(SoraScreens.CountryCollection.createRoute(userId, countryCode, timeframe, sortBy))
+                    },
                     refreshTrigger = feedRefreshTrigger
                 )
             }
@@ -102,6 +105,9 @@ fun MainNavigationScreen(
                 ExploreScreen(
                     onNavigateToProfile = { userId ->
                         navController.navigate(SoraScreens.UserProfile.createRoute(userId))
+                    },
+                    onNavigateToCountryCollection = { userId, countryCode, timeframe, sortBy ->
+                        navController.navigate(SoraScreens.CountryCollection.createRoute(userId, countryCode, timeframe, sortBy))
                     }
                 )
             }
@@ -214,7 +220,15 @@ fun MainNavigationScreen(
                 route = SoraScreens.CountryCollection.route,
                 arguments = listOf(
                     navArgument("userId") { type = NavType.LongType },
-                    navArgument("countryCode") { type = NavType.StringType }
+                    navArgument("countryCode") { type = NavType.StringType },
+                    navArgument("timeframe") {
+                        type = NavType.StringType
+                        defaultValue = "month"
+                    },
+                    navArgument("sortBy") {
+                        type = NavType.StringType
+                        defaultValue = "createdAt"
+                    }
                 )
             ) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getLong("userId") ?: 0L

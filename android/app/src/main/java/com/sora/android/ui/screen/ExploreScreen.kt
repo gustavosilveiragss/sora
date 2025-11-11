@@ -27,20 +27,31 @@ import com.sora.android.domain.model.UserModel
 import com.sora.android.ui.components.SearchBar
 import com.sora.android.ui.components.SoraPostCard
 import com.sora.android.ui.components.UserListItem
+import com.sora.android.ui.screen.explore.components.ExploreGlobe
 import com.sora.android.ui.theme.SoraIcons
 import com.sora.android.ui.theme.SoraTextSecondary
 import com.sora.android.ui.viewmodel.ExploreViewModel
+import com.sora.android.ui.viewmodel.ExploreGlobeViewModel
 
 @Composable
 fun ExploreScreen(
     onNavigateToProfile: (Long) -> Unit,
     onNavigateToComments: (Long) -> Unit = {},
-    viewModel: ExploreViewModel = hiltViewModel()
+    onNavigateToCountryCollection: (Long, String, String, String) -> Unit = { _, _, _, _ -> },
+    viewModel: ExploreViewModel = hiltViewModel(),
+    globeViewModel: ExploreGlobeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val explorePosts = viewModel.explorePosts.collectAsLazyPagingItems()
     val likeModifications by viewModel.likeModifications.collectAsState()
+
+    val globeData by globeViewModel.globeData.collectAsState()
+    val userLocation by globeViewModel.userLocation.collectAsState()
+    val selectedTimeframe by globeViewModel.selectedTimeframe.collectAsState()
+    val isGlobeLoading by globeViewModel.isLoading.collectAsState()
+
     var showGlobe by remember { mutableStateOf(true) }
+    val isGlobeInteracting = remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -66,8 +77,20 @@ fun ExploreScreen(
                     explorePosts = explorePosts,
                     likeModifications = likeModifications,
                     currentUserId = uiState.currentUserId,
-                    selectedTimeframe = uiState.selectedTimeframe,
-                    onTimeframeChange = viewModel::setTimeframe,
+                    selectedTimeframe = selectedTimeframe,
+                    onTimeframeChange = { timeframe ->
+                        viewModel.setTimeframe(timeframe)
+                        globeViewModel.setTimeframe(timeframe)
+                    },
+                    globeData = globeData,
+                    userLocation = userLocation,
+                    isGlobeLoading = isGlobeLoading,
+                    isGlobeInteracting = isGlobeInteracting,
+                    onCountryClick = { countryCode ->
+                        uiState.currentUserId?.let { userId ->
+                            onNavigateToCountryCollection(userId, countryCode, selectedTimeframe, "likesCount")
+                        }
+                    },
                     onToggleLike = viewModel::toggleLike,
                     onNavigateToProfile = onNavigateToProfile,
                     onNavigateToComments = onNavigateToComments
@@ -148,12 +171,18 @@ private fun ExploreContent(
     currentUserId: Long?,
     selectedTimeframe: String,
     onTimeframeChange: (String) -> Unit,
+    globeData: com.sora.android.domain.model.GlobeDataModel?,
+    userLocation: com.mapbox.geojson.Point?,
+    isGlobeLoading: Boolean,
+    isGlobeInteracting: MutableState<Boolean>,
+    onCountryClick: (String) -> Unit,
     onToggleLike: (Long, Boolean, Int) -> Unit,
     onNavigateToProfile: (Long) -> Unit,
     onNavigateToComments: (Long) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
+        userScrollEnabled = !isGlobeInteracting.value,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
@@ -182,13 +211,11 @@ private fun ExploreContent(
             }
         }
 
-        if (!showGlobe) {
-            item {
-                TimeframeSelector(
-                    selectedTimeframe = selectedTimeframe,
-                    onTimeframeChange = onTimeframeChange
-                )
-            }
+        item {
+            TimeframeSelector(
+                selectedTimeframe = selectedTimeframe,
+                onTimeframeChange = onTimeframeChange
+            )
         }
 
         if (showGlobe) {
@@ -196,28 +223,17 @@ private fun ExploreContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(300.dp)
+                        .height(550.dp)
                         .padding(horizontal = 8.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = SoraIcons.Globe,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = stringResource(R.string.globe_view_coming_soon),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    ExploreGlobe(
+                        globeData = globeData,
+                        userLocation = userLocation,
+                        isLoading = isGlobeLoading,
+                        onCountryClick = onCountryClick,
+                        isGlobeInteracting = isGlobeInteracting
+                    )
                 }
             }
         } else {

@@ -98,6 +98,9 @@ interface PostDao {
     @Query("SELECT COUNT(*) FROM post")
     suspend fun getPostCount(): Int
 
+    @Query("DELETE FROM post")
+    suspend fun clearAllPosts()
+
     @Transaction
     suspend fun insertPostWithCleanup(post: Post, maxPosts: Int = 10000) {
         insertPost(post)

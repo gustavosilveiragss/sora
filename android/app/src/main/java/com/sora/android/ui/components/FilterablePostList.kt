@@ -27,6 +27,7 @@ import com.sora.android.ui.theme.SoraTextSecondary
 data class PostListFilters(
     val collectionCode: CollectionCode? = null,
     val cityName: String? = null,
+    val timeframe: String = "month",
     val sortBy: String = "createdAt",
     val sortDirection: String = "DESC"
 )

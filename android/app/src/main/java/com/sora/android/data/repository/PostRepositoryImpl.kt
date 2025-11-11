@@ -221,6 +221,7 @@ class PostRepositoryImpl @Inject constructor(
         countryCode: String,
         collectionCode: String?,
         cityName: String?,
+        timeframe: String,
         page: Int,
         size: Int,
         sortBy: String,
@@ -418,6 +419,12 @@ class PostRepositoryImpl @Inject constructor(
             val posts = postDao.getRecentPosts(50).filter { it.authorId == userId }
             emit(posts.map { it.toPostModel() })
         }
+    }
+
+    override suspend fun invalidateAllPostsCache() {
+        android.util.Log.d("PostRepository", "Invalidando todo o cache de posts")
+        postDao.clearAllPosts()
+        android.util.Log.d("PostRepository", "Cache de posts limpo com sucesso")
     }
 
     private fun isCacheValid(timestamp: Long): Boolean {

@@ -50,7 +50,7 @@ public class GlobeController {
     @GetMapping("/explore")
     @Operation(summary = "Get explore globe data", description = "Get globe data for global content discovery")
     @ApiResponse(responseCode = "200", description = "Explore globe data retrieved successfully")
-    public ResponseEntity<GlobeDataResponseDto> getExploreGlobeData(@Parameter(description = "Time period") @RequestParam(value = "timeframe", defaultValue = "month") String timeframe, @Parameter(description = "Minimum posts per country") @RequestParam(value = "minPosts", defaultValue = "5") int minPosts, Authentication authentication) {
+    public ResponseEntity<GlobeDataResponseDto> getExploreGlobeData(@Parameter(description = "Time period") @RequestParam(value = "timeframe", defaultValue = "month") String timeframe, @Parameter(description = "Minimum posts per country") @RequestParam(value = "minPosts", defaultValue = "1") int minPosts, Authentication authentication) {
         GlobeDataResponseDto globeData = globeService.getExploreGlobeData(timeframe, minPosts);
         return ResponseEntity.ok(globeData);
     }

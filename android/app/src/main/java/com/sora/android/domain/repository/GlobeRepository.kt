@@ -5,4 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface GlobeRepository {
     fun getProfileGlobeData(userId: Long): Flow<Result<GlobeDataModel>>
+    fun getMainGlobeData(): Flow<Result<GlobeDataModel>>
+    fun getExploreGlobeData(timeframe: String, minPosts: Int): Flow<Result<GlobeDataModel>>
 }

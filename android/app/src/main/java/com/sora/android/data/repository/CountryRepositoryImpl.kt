@@ -116,6 +116,7 @@ class CountryRepositoryImpl @Inject constructor(
         countryCode: String,
         collectionCode: String?,
         cityName: String?,
+        timeframe: String,
         page: Int,
         size: Int,
         sortBy: String,

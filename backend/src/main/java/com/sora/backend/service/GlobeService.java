@@ -47,8 +47,8 @@ public class GlobeService {
     public GlobeDataResponseDto getMainGlobeData(UserAccount currentUser) {
         List<Long> followedUserIds = followRepository.findFollowingUserIds(currentUser.getId());
         followedUserIds.add(currentUser.getId());
-        
-        LocalDateTime since = LocalDateTime.now().minusDays(30);
+
+        LocalDateTime since = LocalDateTime.of(2000, 1, 1, 0, 0);
         List<Post> recentPosts = postRepository.findRecentPostsByFollowedUsers(followedUserIds, since);
         
         Map<String, List<Post>> postsByCountry = recentPosts.stream()
@@ -74,7 +74,6 @@ public class GlobeService {
                             .collect(Collectors.toList());
                     
                     List<PostSummaryDto> recentPostSummaries = countryPosts.stream()
-                            .limit(5)
                             .map(this::mapToPostSummaryDto)
                             .collect(Collectors.toList());
                     
@@ -109,9 +108,9 @@ public class GlobeService {
         
         List<CountryMarkerDto> countryMarkers = countriesVisited.stream()
                 .map(country -> {
-                    List<Post> countryPosts = postRepository.findByProfileOwnerIdAndCountryIdOrderByCreatedAtDesc(
-                            userId, country.getId(), PageRequest.of(0, 5)
-                    ).getContent();
+                    List<Post> countryPosts = postRepository.findAllByProfileOwnerIdAndCountryIdOrderByCreatedAtDesc(
+                            userId, country.getId()
+                    );
                     
                     List<UserSummaryDto> activeUsers = List.of();
                     
@@ -164,7 +163,6 @@ public class GlobeService {
                 .collect(Collectors.groupingBy(post -> post.getCountry().getCode()));
         
         List<CountryMarkerDto> countryMarkers = postsByCountry.entrySet().stream()
-                .filter(entry -> entry.getValue().size() >= minPosts)
                 .map(entry -> {
                     String countryCode = entry.getKey();
                     List<Post> countryPosts = entry.getValue();
@@ -177,16 +175,14 @@ public class GlobeService {
                             .collect(Collectors.groupingBy(post -> post.getProfileOwner().getId()));
                     
                     List<UserSummaryDto> activeUsers = postsByUser.entrySet().stream()
-                            .limit(3)
                             .map(userEntry -> {
                                 UserAccount user = userEntry.getValue().getFirst().getProfileOwner();
                                 return mapToUserSummaryDto(user);
                             })
                             .collect(Collectors.toList());
-                    
+
                     List<PostSummaryDto> popularPosts = countryPosts.stream()
                             .sorted((p1, p2) -> Integer.compare(p2.getLikesCount(), p1.getLikesCount()))
-                            .limit(3)
                             .map(this::mapToPostSummaryDto)
                             .collect(Collectors.toList());
                     

@@ -48,11 +48,18 @@ class CountryCollectionViewModel @Inject constructor(
 
     private val userId: Long = checkNotNull(savedStateHandle.get<Long>("userId"))
     private val countryCode: String = checkNotNull(savedStateHandle.get<String>("countryCode"))
+    private val initialTimeframe: String = savedStateHandle.get<String>("timeframe") ?: "month"
+    private val initialSortBy: String = savedStateHandle.get<String>("sortBy") ?: "createdAt"
 
     private val _uiState = MutableStateFlow(CountryCollectionUiState())
     val uiState: StateFlow<CountryCollectionUiState> = _uiState.asStateFlow()
 
-    private val _filters = MutableStateFlow(PostListFilters())
+    private val _filters = MutableStateFlow(
+        PostListFilters(
+            timeframe = initialTimeframe,
+            sortBy = initialSortBy
+        )
+    )
     val filters: StateFlow<PostListFilters> = _filters.asStateFlow()
 
     private val _likeModifications = MutableStateFlow<Map<Long, LikeModification>>(emptyMap())
@@ -64,6 +71,7 @@ class CountryCollectionViewModel @Inject constructor(
             countryCode = countryCode,
             collectionCode = filters.collectionCode?.name,
             cityName = filters.cityName,
+            timeframe = filters.timeframe,
             sortBy = filters.sortBy,
             sortDirection = filters.sortDirection
         ).also {
@@ -116,6 +124,7 @@ class CountryCollectionViewModel @Inject constructor(
                 countryRepository.getCountryPosts(
                     userId = userId,
                     countryCode = countryCode,
+                    timeframe = initialTimeframe,
                     page = 0,
                     size = 1
                 ).collect { response ->

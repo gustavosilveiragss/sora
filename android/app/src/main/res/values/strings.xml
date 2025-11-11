@@ -512,4 +512,12 @@
     <string name="error_post_creation_failed">Falha ao criar publicação</string>
     <string name="error_upload_failed">Falha ao enviar imagem</string>
 
+    <string name="main_globe_empty">Siga usuários para ver atividades no globo</string>
+    <string name="main_globe_loading">Carregando atividades recentes...</string>
+    <string name="main_feed_title">Feed Principal</string>
+
+    <string name="explore_globe_empty">Nenhum destino em alta no momento</string>
+    <string name="explore_trending_title">Destinos em Alta</string>
+    <string name="explore_heat_legend">🔴 Trending · 🟠 Relevante · 🟡 Crescendo · 🟢 Começando</string>
+
 </resources>

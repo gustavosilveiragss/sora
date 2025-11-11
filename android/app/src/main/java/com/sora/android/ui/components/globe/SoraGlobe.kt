@@ -60,8 +60,8 @@ fun SoraGlobe(
     isInteracting: MutableState<Boolean> = remember { mutableStateOf(false) },
     emptyMessage: String = "No data to display"
 ) {
-    val highlightedCountryCodes = remember(data) {
-        data?.countries?.filter { it.shouldHighlight }?.map { it.code } ?: emptyList()
+    val highlightedCountries = remember(data) {
+        data?.countries?.filter { it.shouldHighlight } ?: emptyList()
     }
 
     val mapViewportState = rememberMapViewportState {
@@ -124,7 +124,7 @@ fun SoraGlobe(
             mapViewportState = mapViewportState,
             style = { Style.STANDARD }
         ) {
-            MapEffect(highlightedCountryCodes, data.markers) { mapView ->
+            MapEffect(highlightedCountries, data.markers) { mapView ->
                 val userLocale = Locale.getDefault()
                 val language = when (userLocale.language) {
                     "pt" -> "pt"
@@ -142,8 +142,8 @@ fun SoraGlobe(
                                 .build()
                         )
 
-                        if (config.enableCountryHighlight && highlightedCountryCodes.isNotEmpty()) {
-                            setupCountryHighlighting(style, highlightedCountryCodes, config)
+                        if (config.enableCountryHighlight && highlightedCountries.isNotEmpty()) {
+                            setupCountryHighlighting(style, highlightedCountries, config)
                         }
 
                         if (config.enableMarkers && data.markers.isNotEmpty()) {
@@ -172,9 +172,12 @@ fun SoraGlobe(
 
 private fun setupCountryHighlighting(
     style: Style,
-    countryCodes: List<String>,
+    countries: List<GlobeCountry>,
     config: GlobeConfig
 ) {
+    val countryCodes = countries.map { it.code }
+    val hasIntensity = countries.any { it.intensity != null }
+
     if (!style.styleSourceExists("country-boundaries")) {
         style.addSource(
             vectorSource("country-boundaries") {
@@ -187,22 +190,60 @@ private fun setupCountryHighlighting(
         style.removeStyleLayer("visited-countries-fill")
     }
 
-    style.addLayer(
-        fillLayer("visited-countries-fill", "country-boundaries") {
-            sourceLayer("country_boundaries")
-            fillColor(config.countryHighlightColor)
-            fillOpacity(config.countryHighlightOpacity)
-            filter(
-                match {
-                    get { literal("iso_3166_1") }
-                    literal(countryCodes)
-                    literal(true)
-                    literal(false)
-                }
-            )
-        }
-    )
-    Log.d("SORA_GLOBE", "Country highlighting added for: $countryCodes")
+    if (hasIntensity) {
+        val intensityMap = countries.associate { it.code to (it.intensity ?: 0.0) }
+
+        style.addLayer(
+            fillLayer("visited-countries-fill", "country-boundaries") {
+                sourceLayer("country_boundaries")
+                fillColor(
+                    match {
+                        get { literal("iso_3166_1") }
+                        countries.map { country ->
+                            literal(country.code) to literal(getHeatMapColor(country.intensity ?: 0.0))
+                        }.toTypedArray()
+                        literal(config.countryHighlightColor)
+                    }
+                )
+                fillOpacity(config.countryHighlightOpacity)
+                filter(
+                    match {
+                        get { literal("iso_3166_1") }
+                        literal(countryCodes)
+                        literal(true)
+                        literal(false)
+                    }
+                )
+            }
+        )
+        Log.d("SORA_GLOBE", "Heat map highlighting added for ${countryCodes.size} countries")
+    } else {
+        style.addLayer(
+            fillLayer("visited-countries-fill", "country-boundaries") {
+                sourceLayer("country_boundaries")
+                fillColor(config.countryHighlightColor)
+                fillOpacity(config.countryHighlightOpacity)
+                filter(
+                    match {
+                        get { literal("iso_3166_1") }
+                        literal(countryCodes)
+                        literal(true)
+                        literal(false)
+                    }
+                )
+            }
+        )
+        Log.d("SORA_GLOBE", "Country highlighting added for: $countryCodes")
+    }
+}
+
+private fun getHeatMapColor(intensity: Double): String {
+    return when {
+        intensity >= 0.7 -> "#FF0000"
+        intensity >= 0.4 -> "#FF8800"
+        intensity >= 0.2 -> "#FFDD00"
+        else -> "#00FF00"
+    }
 }
 
 private fun setupMarkers(

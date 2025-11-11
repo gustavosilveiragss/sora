@@ -14,6 +14,7 @@ interface CountryRepository {
         countryCode: String,
         collectionCode: String? = null,
         cityName: String? = null,
+        timeframe: String = "month",
         page: Int = 0,
         size: Int = 20,
         sortBy: String = "createdAt",

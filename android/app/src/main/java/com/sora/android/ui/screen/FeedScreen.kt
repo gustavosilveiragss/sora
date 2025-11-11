@@ -7,12 +7,14 @@ import androidx.compose.ui.Modifier
 fun FeedScreen(
     onNavigateToProfile: (Long) -> Unit = {},
     onNavigateToPost: (Long) -> Unit = {},
+    onNavigateToCountryCollection: (Long, String, String, String) -> Unit = { _, _, _, _ -> },
     modifier: Modifier = Modifier,
     refreshTrigger: Int = 0
 ) {
     HomeScreen(
         modifier = modifier,
         onNavigateToProfile = onNavigateToProfile,
+        onNavigateToCountryCollection = onNavigateToCountryCollection,
         refreshTrigger = refreshTrigger
     )
 }

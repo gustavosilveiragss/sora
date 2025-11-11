@@ -20,6 +20,7 @@ interface PostRepository {
         countryCode: String,
         collectionCode: String? = null,
         cityName: String? = null,
+        timeframe: String = "month",
         page: Int = 0,
         size: Int = 20,
         sortBy: String = "createdAt",
@@ -38,4 +39,5 @@ interface PostRepository {
     suspend fun getCachedPosts(): Flow<List<PostModel>>
     suspend fun refreshFeed(): Result<Unit>
     suspend fun getCachedUserPosts(userId: Long): Flow<List<PostModel>>
+    suspend fun invalidateAllPostsCache()
 }

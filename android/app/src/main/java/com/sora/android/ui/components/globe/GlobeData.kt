@@ -6,12 +6,14 @@ data class GlobeMarker(
     val longitude: Double,
     val countryCode: String,
     val cityName: String? = null,
+    val intensity: Double? = null,
     val metadata: Map<String, Any> = emptyMap()
 )
 
 data class GlobeCountry(
     val code: String,
-    val shouldHighlight: Boolean = true
+    val shouldHighlight: Boolean = true,
+    val intensity: Double? = null
 )
 
 data class GlobeDisplayData(

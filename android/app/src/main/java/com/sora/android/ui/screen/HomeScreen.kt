@@ -19,21 +19,31 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.sora.android.R
 import com.sora.android.ui.components.SoraPostCard
+import com.sora.android.ui.screen.home.components.MainFeedGlobe
 import com.sora.android.ui.theme.SoraIcons
 import com.sora.android.ui.viewmodel.HomeViewModel
+import com.sora.android.ui.viewmodel.MainFeedViewModel
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
+    mainFeedViewModel: MainFeedViewModel = hiltViewModel(),
     onNavigateToProfile: (Long) -> Unit = {},
+    onNavigateToCountryCollection: (Long, String, String, String) -> Unit = { _, _, _, _ -> },
     refreshTrigger: Int = 0
 ) {
     val posts = viewModel.feedPosts.collectAsLazyPagingItems()
     val error by viewModel.error.collectAsState()
     val likeModifications by viewModel.likeModifications.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
+
+    val globeData by mainFeedViewModel.globeData.collectAsState()
+    val userLocation by mainFeedViewModel.userLocation.collectAsState()
+    val isGlobeLoading by mainFeedViewModel.isLoading.collectAsState()
+
     var showGlobe by remember { mutableStateOf(true) }
+    val isGlobeInteracting = remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshTrigger) {
         if (refreshTrigger > 0) {
@@ -44,6 +54,7 @@ fun HomeScreen(
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            userScrollEnabled = !isGlobeInteracting.value,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
@@ -77,28 +88,21 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(300.dp)
+                            .height(650.dp)
                             .padding(horizontal = 8.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = SoraIcons.Globe,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = stringResource(R.string.globe_view_coming_soon),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        MainFeedGlobe(
+                            globeData = globeData,
+                            userLocation = userLocation,
+                            isLoading = isGlobeLoading,
+                            onCountryClick = { countryCode ->
+                                currentUserId?.let { userId ->
+                                    onNavigateToCountryCollection(userId, countryCode, "month", "createdAt")
+                                }
+                            },
+                            isGlobeInteracting = isGlobeInteracting
+                        )
                     }
                 }
             } else {

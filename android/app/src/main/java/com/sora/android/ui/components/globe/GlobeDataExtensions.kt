@@ -10,7 +10,8 @@ fun GlobeDataModel.toGlobeDisplayData(): GlobeDisplayData {
         countries.add(
             GlobeCountry(
                 code = countryMarker.countryCode,
-                shouldHighlight = true
+                shouldHighlight = true,
+                intensity = countryMarker.intensity
             )
         )
 
@@ -26,6 +27,7 @@ fun GlobeDataModel.toGlobeDisplayData(): GlobeDisplayData {
                         longitude = lon,
                         countryCode = countryMarker.countryCode,
                         cityName = post.cityName,
+                        intensity = countryMarker.intensity,
                         metadata = mapOf(
                             "postId" to post.id
                         )
